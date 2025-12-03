@@ -13,7 +13,7 @@ def create_reactions_for_step_one(verbose=False):
 
     """
     reactions = [] # [reactant, product, kdirect, kreverse]
-    kd, kr = 1, 1 # ! HARDCODED
+    kd, kr = 1, 0.1 # ! HARDCODED
 
     # isomer O16 pure
     template = [16, 16, 16, 16]
@@ -65,19 +65,21 @@ def create_reactions_for_step_two(verbose=False):
     _rhs_po4_16[-1] = 0
     ## only one is created because if there are no O16, permutation are
     ## equivalent in terms of rate constants
-    rhs_po4_16 = (tuple(_rhs_po4_16),)
+    rhs_po4_16 = (tuple(_rhs_po4_16), (16))
     reactions.append((lhs_po5, rhs_po4_16, kd, kr))
 
     # isomer O16 O18 mix
     for template in [[18, 16, 16, 16, 16], [18, 18, 16, 16, 16]]: # ! HARDCODED
         comb_po5 = list([list(o) for o in set(itertools.permutations(template))])
-        kd, kr = 1, 1 # ! HARDCODED
+        kd, kr = 1, 0.1 # ! HARDCODED
         for lhs_po5 in comb_po5:
            # the oxygen can only be lost from one specific position (arbitrarely [-1])
             _lhs_po5 = lhs_po5.copy()
             rhs_po4 = _lhs_po5
+            h2o = rhs_po4[-1]
             rhs_po4[-1] = 0
-            reactions.append(((tuple(lhs_po5),), (tuple(rhs_po4),), kd, kr))
+            print(h2o, rhs_po4[-1])
+            reactions.append(((tuple(lhs_po5),), (tuple(rhs_po4), (h2o)), kd, kr))
     
     reactions_worep = list(set(reactions))
     if verbose:
@@ -96,7 +98,6 @@ def convert_to_kinetx_notation(reactions, initial_conc):
     compounds = {}
     acc = 1
     for r in reactions:
-        print("===========loop", r)
         lhs, rhs, _, _ = r
         for hs in [lhs, rhs]:
             for hsi in hs:
@@ -114,25 +115,30 @@ def convert_to_kinetx_notation(reactions, initial_conc):
     n_channels_per_reaction = 1
     network_builder.reserve(n_compounds, n_reactions, n_channels_per_reaction)
     
-    
-    concentrations = [0.9, 0.1] + [0 for _ in range(n_compounds-2)] # ! HARDCODED
-    
-
+    initial_conc2 = {compounds[d]:initial_conc[d] for d in initial_conc}
+    print(initial_conc2)
+    concentrations = []
+    for i in range(n_compounds):
+        ii = i + 1
+        keys = initial_conc2.keys()
+        if ii in keys:
+            concentrations.append(initial_conc2[ii])
+        else:
+            concentrations.append(0)
+    print(concentrations)
     for i in range(n_compounds):
         network_builder.add_compound(1, str(i))
     for r in reactions:
         _lhs, _rhs, kd, kr = r
-        lhs = [compounds[o] for o in _lhs]
-        rhs = [compounds[o] for o in _rhs]
-        if len(lhs) == 1: lhs = lhs + [0]
-        if len(rhs) == 1: rhs = rhs + [0]
-        print(_lhs, _rhs)
-        print(lhs, rhs)
-        network_builder.add_reaction([kd], [kr], [tuple(lhs)], [tuple(rhs)])
+        lhs = [(compounds[o],1) for o in _lhs]
+        rhs = [(compounds[o],1) for o in _rhs]
+        print("lhs", lhs, "rhs", rhs)
+        network_builder.add_reaction([kd], [kr], lhs, rhs)
     network = network_builder.generate()
     solver = kx.Integrator.explicit_euler
+    #solver = kx.Integrator.implicit_euler
     concentration_data, r_flux, rf_flux, rb_flux = kx.integrate(network, np.asarray(
-        concentrations), 0.0, 1e+0, solver, 5000, 10000, 1e-10)
+        concentrations),  0.0, 1e+0, solver, 5000, 10000, 1e-10)
 
     return
 
