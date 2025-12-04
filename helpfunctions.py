@@ -72,7 +72,11 @@ def create_reactions_for_step_one(verbose=False):
         lhs_po4_18 = (tuple(_lhs_po4), (18,))
         rhs_po4_16 = (tuple(_lhs_po4 + [16]),)
         rhs_po4_18 = (tuple(_lhs_po4 + [18]),)
+
+        kd, kr = _calculate_rate_constant(lhs_po4_16, kie=1)
         reactions.append((lhs_po4_16, rhs_po4_16, kd, kr))
+        
+        kd, kr = _calculate_rate_constant(lhs_po4_18, kie=1)
         reactions.append((lhs_po4_18, rhs_po4_18, kd, kr))
 
     if verbose: 
@@ -120,7 +124,7 @@ def create_reactions_for_step_two(verbose=False):
             rhs_po4.pop()
             reactions.append(((tuple(lhs_po5),), (tuple(rhs_po4), (h2o,)), kd, kr))
     
-    reactions_worep = list(set(reactions))
+    #reactions_worep = list(set(reactions))
     if verbose:
         for r in reactions_worep:
             print(len(reactions_worep))
@@ -152,7 +156,8 @@ def convert_to_kinetx_notation(reactions, initial_conc, verbose=True):
     n_compounds = len(compounds.keys())
     n_reactions = len(reactions) 
     n_channels_per_reaction = 1
-    network_builder.reserve(n_compounds, n_reactions, n_channels_per_reaction)
+    print("====", n_reactions)
+    #network_builder.reserve(n_compounds, n_reactions, n_channels_per_reaction)
     
     initial_conc2 = {compounds[d]:initial_conc[d] for d in initial_conc}
     concentrations = []
@@ -165,22 +170,22 @@ def convert_to_kinetx_notation(reactions, initial_conc, verbose=True):
     for i in range(n_compounds):
         idxcompound = i 
         network_builder.add_compound(1, str(idxcompound))
+    edges = []
     for r in reactions:
         _lhs, _rhs, kd, kr = r
         lhs = [(compounds[o],1) for o in _lhs]
         rhs = [(compounds[o],1) for o in _rhs]
         print("reactionss", _lhs, _rhs)
-        network_builder.add_reaction([kd], [kr], lhs, rhs)
-    edges = list()
-    _lhs = [a for a,b,c,d in reactions]
-    _rhs = [b for a,b,c,d in reactions]
-    for r in reactions:
-        _lhs, _rhs, kd , kr = r
-        for e1 in _lhs:
-            for e2 in _rhs:
-                E1 = compounds[e1]
-                E2 = compounds[e2]
+        print("reactions post", lhs, rhs)
+        lhs2 = [o for o in _lhs] 
+        rhs2 = [o for o in _rhs]
+        for e1 in lhs2:
+            for e2 in rhs2:
+                E1 = e1 #compounds[e1]
+                E2 = e2 #compounds[e2]
                 edges.append((E1, E2))
+        network_builder.add_reaction([kd], [kr], lhs, rhs)
+    
     import matplotlib.pyplot as plt
     G = nx.Graph()
     G.add_edges_from(edges)
@@ -194,12 +199,11 @@ def convert_to_kinetx_notation(reactions, initial_conc, verbose=True):
     solver = kx.Integrator.explicit_euler
     #solver = kx.Integrator.implicit_euler
     tstart = 0
-    dt = 1e+0
     batch_interval = 5000
     nbatches = 10000
     convergence = 1e-10
     maxtime = 0
-    timerange = np.logspace(-8, 2, num=10)
+    timerange = np.logspace(-8, -2, num=100)
     concentration_data.append(concentrations)
     for idx in range(len(timerange)-1):
         tstart = timerange[idx]
