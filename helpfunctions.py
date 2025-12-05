@@ -11,32 +11,35 @@ def _calculate_rate_constant(lhs, kie=1):
     #k18p  = kie * 1.001  # O18 in reactive position (primary)
     #k18s  = kie * 1.01   # O18 in non-reactive position (secundary)
     #k16   = 1.0    # no O18
-    k16   = 0.001    # no O18
+    #k16   = 0.001    # no O18
+    k16 = 1
     k18ps = k16 / kie * 1.0011 # O18 in reactive and non-reactive positions
     k18p  = k16 / kie * 1.001  # O18 in reactive position (primary)
     k18s  = k16 / kie * 1.01   # O18 in non-reactive position (secundary)
 
+    rhspenalty = 10
     if len(lhs) == 2: # reaction 1
         # write it up
         lhsi, lhsj = lhs
         assert len(lhsj) == 1 # make sure its the h2o 
         if 18 in lhsj:
-            Ks = (k18p, k18p/100)
+            Ks = (k18p, k18p/rhspenalty)
         elif 16 in lhsj:
-            Ks = (k16, k16/100)
+            Ks = (k16, k16/rhspenalty)
     elif len(lhs) == 1: # reaction 2
         lhs = lhs[0]
         if 18 not in lhs:
-            Ks = (k16, k16/100)
+            Ks = (k16, k16/rhspenalty)
         elif 18 in lhs:
             if lhs.index(18) == 5: # reactive site
                 if lhs.count(18) == 1:
-                    Ks = (k18p, k18p/100)
+                    Ks = (k18p, k18p/rhspenalty)
                 elif lhs.count(18) == 2:
-                    Ks = (k18ps, k18ps/100)
+                    Ks = (k18ps, k18ps/rhspenalty)
             elif lhs.index(18) != 5: # non reactive site
-                Ks = (k18s, k18s/100)
+                Ks = (k18s, k18s/rhspenalty)
     kd, kr = Ks
+    #kd, kr = 1, 0.01
     return kd, kr
 
 def create_reactions_for_step_one(verbose=False):
@@ -53,7 +56,7 @@ def create_reactions_for_step_one(verbose=False):
     #kd, kr = 1, 0.001 # ! HARDCODED
 
     # isomer O16 pure
-    template = [16, 16, 16, 16]
+    template = [12, 16, 16, 16, 16]
     lhs_po4_16 = (tuple(template), (16,))
     lhs_po4_18 = (tuple(template), (18,))
     rhs_po4_16 = (tuple(template + [16]),)
@@ -68,10 +71,10 @@ def create_reactions_for_step_one(verbose=False):
     template = [18, 16, 16, 16] # ! HARDCODED
     comb_po4 = list([list(o) for o in set(itertools.permutations(template))])
     for _lhs_po4 in comb_po4:
-        lhs_po4_16 = (tuple(_lhs_po4), (16,))
-        lhs_po4_18 = (tuple(_lhs_po4), (18,))
-        rhs_po4_16 = (tuple(_lhs_po4 + [16]),)
-        rhs_po4_18 = (tuple(_lhs_po4 + [18]),)
+        lhs_po4_16 = (tuple([12] + _lhs_po4), (16,))
+        lhs_po4_18 = (tuple([12] + _lhs_po4), (18,))
+        rhs_po4_16 = (tuple([12] + _lhs_po4 + [16]),)
+        rhs_po4_18 = (tuple([12] + _lhs_po4 + [18]),)
 
         kd, kr = _calculate_rate_constant(lhs_po4_16, kie=1)
         reactions.append((lhs_po4_16, rhs_po4_16, kd, kr))
@@ -102,13 +105,13 @@ def create_reactions_for_step_two(verbose=False):
     #kd, kr = 1, 0.001 # ! HARDCODED
     
     # isomer O16 pure
-    template = [16, 16, 16, 16, 16] # ! HARDCODED 
+    template = [12, 16, 16, 16, 16, 16] # ! HARDCODED 
     lhs_po5 = (tuple(template),)
     _rhs_po4_16 = template.copy()
     _rhs_po4_16.pop()
     ## only one is created because if there are no O16, permutation are
     ## equivalent in terms of rate constants
-    rhs_po4_16 = (tuple(_rhs_po4_16), (16,))
+    rhs_po4_16 = (tuple(_rhs_po4_16), (12, 16))
     kd, kr = _calculate_rate_constant(lhs_po5, kie=1)
     reactions.append((lhs_po5, rhs_po4_16, kd, kr))
 
@@ -117,12 +120,15 @@ def create_reactions_for_step_two(verbose=False):
         comb_po5 = list([list(o) for o in set(itertools.permutations(template))])
         for lhs_po5 in comb_po5:
            # the oxygen can only be lost from one specific position (arbitrarely [-1])
-            _lhs_po5 = lhs_po5.copy()
+            _lhs_po5 = [12] + lhs_po5.copy()
             kd, kr = _calculate_rate_constant(tuple((lhs_po5,)), kie=1)
             rhs_po4 = _lhs_po5
             h2o = rhs_po4[-1]
+            c = rhs_po4[0]
+            assert c == 12
             rhs_po4.pop()
-            reactions.append(((tuple(lhs_po5),), (tuple(rhs_po4), (h2o,)), kd, kr))
+            rhs_po4.pop(0)
+            reactions.append(((tuple(lhs_po5),), (tuple(rhs_po4), (c, h2o)), kd, kr))
     
     #reactions_worep = list(set(reactions))
     if verbose:
@@ -186,24 +192,27 @@ def convert_to_kinetx_notation(reactions, initial_conc, verbose=True):
                 edges.append((E1, E2))
         network_builder.add_reaction([kd], [kr], lhs, rhs)
     
-    import matplotlib.pyplot as plt
-    G = nx.Graph()
-    G.add_edges_from(edges)
-    plt.figure(figsize=(10,8))
-    pos = nx.spring_layout(G)
-    nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=600, arrows=True)
-    plt.show()
+    #import matplotlib.pyplot as plt
+    #G = nx.Graph()
+    #G.add_edges_from(edges)
+    #plt.figure(figsize=(10,8))
+    #pos = nx.spring_layout(G)
+    #nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=600, arrows=True)
+    #plt.show()
     
     concentration_data = []
     network = network_builder.generate()
-    solver = kx.Integrator.explicit_euler
-    #solver = kx.Integrator.implicit_euler
+    #solver = kx.Integrator.explicit_euler
+    solver = kx.Integrator.implicit_euler
+    #solver = kx.Integrator.cash_karp_5
+    #solver = kx.Integrator.cvode_bdf
     tstart = 0
     batch_interval = 5000
     nbatches = 10000
-    convergence = 1e-10
     maxtime = 0
-    timerange = np.logspace(-8, -2, num=100)
+    convergence = 1e-200
+    #timerange = np.logspace(-8, -2, num=1000)
+    timerange = np.logspace(-3, -2, num=100)
     concentration_data.append(concentrations)
     for idx in range(len(timerange)-1):
         tstart = timerange[idx]
@@ -213,8 +222,32 @@ def convert_to_kinetx_notation(reactions, initial_conc, verbose=True):
         concentrations),  tstart, dt, solver, batch_interval, nbatches, convergence, integrateByTime=True, maxTime=maxtime)
         col1, col2, col3 = zip(*concentration_tmp)
         concentrations = col1
+        if False: #while _is_concentration_sparse(concentrations, verbose=True):
+            convergence *= -10 # increase convergence criteria
+            print(convergence)
+            concentration_tmp, r_flux, rf_flux, rb_flux = kx.integrate(network, np.asarray(             concentrations),  tstart, dt, solver, batch_interval, nbatches, convergence, integrateByTime=True, maxTime=maxtime)
+            col1, col2, col3 = zip(*concentration_tmp)
+            concentrations = col1
+
         concentration_data.append(col1)
     return concentration_data, timerange, compounds
+
+def _is_concentration_sparse(log_values, drop_threshold=60, verbose=True):
+    """
+    Detects numerically unstable downward jumps in concentration time series.
+    Works in log space to handle extremely small values robustly.
+    """
+    log_values = np.asarray(log_values, dtype=float)
+
+    diffs = np.diff(log_values)
+
+    output = np.any(diffs < -drop_threshold)
+
+    if verbose:
+        print("Is there a concentration jump?", output)
+        if output:
+            print("Diffs:", diffs)
+    return output
 
 def plot_ratio_vs_time(concentration_data, time_data, compounds, file, Rstd=0.002004):
     """
@@ -222,13 +255,13 @@ def plot_ratio_vs_time(concentration_data, time_data, compounds, file, Rstd=0.00
     """
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots()
-    Rsub = {"PO4": [], "PO5": []}
-    for c in concentration_data:
+    Rsub = {"CPO4": [], "CPO5": [], "PO4": [], "O": []}
+    for c in concentration_data[1:]:
         tmpo18, tmpo16 = [], []
         po4_18, po4_16 = [], []
         po5_18, po5_16 = [], []
         for d in compounds:
-            if len(d) == 4: # PO4
+            if len(d) == 4 and 12 in compounds[d]: # CPO4
                 po4_18.append(d.count(18) * c[compounds[d]])
                 po4_16.append(d.count(16) * c[compounds[d]])
             elif len(d) == 5:
@@ -243,7 +276,7 @@ def plot_ratio_vs_time(concentration_data, time_data, compounds, file, Rstd=0.00
     d_ind_stoich = {compounds[d]:d for d in compounds}
     plt.xscale("log")
     for d in Rsub:
-        plt.plot(time_data, Rsub[d], label=d)
+        plt.plot(time_data[1:], Rsub[d], label=d)
     plt.xlabel("Time (s)")
     plt.ylabel("Ratio substract O18/O16")
     plt.legend()
@@ -256,13 +289,13 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, file):
     Plot evolution of concentrations in time
     """
     import matplotlib.pyplot as plt
-    #plt.rcParams['axes.prop_cycle'] = plt.cycler(color=plt.cm.tab20.colors)
+    plt.rcParams['axes.prop_cycle'] = plt.cycler(color=plt.cm.tab20.colors)
     fig, ax = plt.subplots()
     concentration_dataT = np.array(concentration_data).T
     idx = 0
     d_ind_stoich = {compounds[d]:d for d in compounds}
     for c in concentration_dataT:
-        if max(c) < 1e-8:
+        if max(c) < 1e-100:
             plt.plot(time_data, c, color='tab:grey', linewidth=3)
         else:
             plt.plot(time_data, c, label=d_ind_stoich[idx])
