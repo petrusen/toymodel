@@ -23,7 +23,7 @@ def _calculate_rate_constant(lhs, kie=1):
     k18s = 0.995
     k18sp = k18p * k18s
 
-    rhspenalty = 100000
+    rhspenalty = 1000
     if len(lhs) == 2: # reaction 1
         # write it up
         lhsi, lhsj = lhs
@@ -67,7 +67,6 @@ def create_reactions_for_step_one(kie, verbose=False):
     lhs_po4_18 = (tuple(template), (18,))
     rhs_po4_16 = (tuple(template + [16]),)
     rhs_po4_18 = (tuple(template + [18]),)
-    print(lhs_po4_16)
     kd, kr = _calculate_rate_constant(lhs_po4_16, kie)
     reactions.append((lhs_po4_16, rhs_po4_16, kd, kr))
     kd, kr = _calculate_rate_constant(lhs_po4_18, kie)
@@ -91,7 +90,6 @@ def create_reactions_for_step_one(kie, verbose=False):
     if verbose: 
         for r in reactions:
             print(r)
-        print(len(reactions))
 
     return reactions
 
@@ -143,7 +141,7 @@ def create_reactions_for_step_two(kie, verbose=False):
             print(len(reactions_worep))
     return reactions
 
-def convert_to_kinetx_notation(reactions, initial_conc, concfile=False, timefile=False, verbose=True):
+def convert_to_kinetx_notation(reactions, initial_conc, verbose=True):
     """
     Convert simplified form of isotopic reactions to a format that KiNetX can read
     """
@@ -154,7 +152,6 @@ def convert_to_kinetx_notation(reactions, initial_conc, concfile=False, timefile
     acc = 0
     for r in reactions:
         lhs, rhs, _, _ = r
-        print("reactions", r)
         for hs in [lhs, rhs]:
             for hsi in hs:
                 if hsi in compounds.keys():
@@ -169,7 +166,6 @@ def convert_to_kinetx_notation(reactions, initial_conc, concfile=False, timefile
     n_compounds = len(compounds.keys())
     n_reactions = len(reactions) 
     n_channels_per_reaction = 1
-    print("====", n_reactions)
     #network_builder.reserve(n_compounds, n_reactions, n_channels_per_reaction)
     
     initial_conc2 = {compounds[d]:initial_conc[d] for d in initial_conc}
@@ -188,8 +184,6 @@ def convert_to_kinetx_notation(reactions, initial_conc, concfile=False, timefile
         _lhs, _rhs, kd, kr = r
         lhs = [(compounds[o],1) for o in _lhs]
         rhs = [(compounds[o],1) for o in _rhs]
-        print("reactionss", _lhs, _rhs)
-        print("reactions post", lhs, rhs)
         lhs2 = [o for o in _lhs] 
         rhs2 = [o for o in _rhs]
         for e1 in lhs2:
@@ -198,7 +192,7 @@ def convert_to_kinetx_notation(reactions, initial_conc, concfile=False, timefile
                 E2 = e2 #compounds[e2]
                 edges.append((E1, E2))
         network_builder.add_reaction([kd], [kr], lhs, rhs)
-    
+    #
     #import matplotlib.pyplot as plt
     #G = nx.Graph()
     #G.add_edges_from(edges)
@@ -217,9 +211,9 @@ def convert_to_kinetx_notation(reactions, initial_conc, concfile=False, timefile
     batch_interval = 5000
     nbatches = 10000
     maxtime = 0
-    convergence = 1e-20
+    convergence = 1e-200
     #timerange = np.logspace(-8, -2, num=1000)
-    timerange = np.logspace(-8, 7, num=1000)
+    timerange = np.logspace(-8, 9, num=1000)
     #timerange = np.linspace(0, 1e+4, num=1000)
     concentration_data.append(concentrations)
     for idx in range(len(timerange)-1):
@@ -235,11 +229,6 @@ def convert_to_kinetx_notation(reactions, initial_conc, concfile=False, timefile
         except RuntimeError:
             pass #concentration_data.append([None for _ in concentrations])
 
-
-    if (concfile is not False) and (timefile is not False):
-        if verbose: print("Save concentration and time files")
-        np.save(concfile, concentrations)
-        np.save(timefile, timerange)
 
     return concentration_data, timerange, compounds
 
@@ -265,30 +254,52 @@ def plot_ratio_vs_time(concentration_data, time_data, compounds, file, Rstd=0.00
     Convert concentrations to substract ratio of O18/O16. Convention in the field.
     """
     import matplotlib.pyplot as plt
-    fig, ax = plt.subplots()
-    Rsub = {"CPO4": [], "CPO5": [], "PO4": []}
+    Rsub = {"CPO4": [], "CPO5": [], "PO4": [], "O":[], "CO":[]}
     for c in concentration_data[1:]:
         tmpo18, tmpo16 = [], []
         cpo4_18, cpo4_16 = [], []
         cpo5_18, cpo5_16 = [], []
         po4_18, po4_16 = [], []
+        o_18, o_16 = [], []
+        co_18, co_16 = [], []
         for d in compounds:
-            if len(d) == 5:
-                if 12 in d: # CPO4
-                    cpo4_18.append(d.count(18) * c[compounds[d]])
-                    cpo4_16.append(d.count(16) * c[compounds[d]])
-                elif 12 not in d: # PO4
-                    po4_18.append(d.count(18) * c[compounds[d]])
-                    po4_16.append(d.count(16) * c[compounds[d]])
+            if len(d) == 1: #O1
+               o_18.append(d.count(18) * c[compounds[d]])
+               o_16.append(d.count(16) * c[compounds[d]])
+            elif len(d) == 2: #CO1
+               co_18.append(d.count(18) * c[compounds[d]])
+               co_16.append(d.count(16) * c[compounds[d]])
+            elif len(d) == 5: #CPO4
+               cpo4_18.append(d.count(18) * c[compounds[d]])
+               cpo4_16.append(d.count(16) * c[compounds[d]])
+            elif len(d) == 4: # PO4
+               po4_18.append(d.count(18) * c[compounds[d]])
+               po4_16.append(d.count(16) * c[compounds[d]])
             elif len(d) == 6: #CPO5
-                cpo5_18.append(d.count(18) * c[compounds[d]])
-                cpo5_16.append(d.count(16) * c[compounds[d]])
+               cpo5_18.append(d.count(18) * c[compounds[d]])
+               cpo5_16.append(d.count(16) * c[compounds[d]])
+        
+        # ratio cpo4
         cpo4_sub = sum(cpo4_18) / sum(cpo4_16)
-        Rsub["CPO4"].append(cpo4_sub / Rstd - 1 * 1000)
+        Rsub["CPO4"].append(((cpo4_sub / Rstd) - 1) * 1000)
+        
+        # ratio po4
         po4_sub = sum(po4_18) / sum(po4_16)
-        Rsub["PO4"].append(po4_sub / Rstd - 1 * 1000)
+        Rsub["PO4"].append(((po4_sub / Rstd) - 1) * 1000)
+        
+        # ratio cpo5
         cpo5_sub = sum(cpo5_18) / sum(cpo5_16)
-        Rsub["CPO5"].append(cpo5_sub / Rstd - 1 * 1000)
+        Rsub["CPO5"].append(((cpo5_sub / Rstd) - 1) * 1000)
+        
+        # ration o1
+        o_sub = sum(o_18) / sum(o_16)
+        Rsub["O"].append(((o_sub / Rstd) - 1) * 1000)
+        
+        # ratio co1
+        co_sub = sum(co_18) / sum(co_16)
+        Rsub["CO"].append(((co_sub / Rstd) - 1) * 1000)
+
+
     #plt.rcParams['axes.prop_cycle'] = plt.cycler(color=plt.cm.tab20.colors)
     fig, ax = plt.subplots()
     d_ind_stoich = {compounds[d]:d for d in compounds}
@@ -313,19 +324,20 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, file):
     idx = 0
     d_ind_stoich = {compounds[d]:d for d in compounds}
     for d, c in zip(compounds, concentration_dataT):
+        if max(c) < 1e-20:
+            continue
         if idx < 20:
             plottype = '-'
             linewidth = 2
         elif 20 <= idx < 40:
             plottype = '--'
             linewidth = 3.5
+
         if len(d) == 6:
-            plt.plot(time_data, c, plottype, label=d_ind_stoich[idx], linewidth=linewidth)
+            plt.plot(time_data, c, plottype, label=str(d), linewidth=linewidth)
         else:
-            plt.plot(time_data, c, plottype, label=d_ind_stoich[idx], linewidth=linewidth)
+            plt.plot(time_data, c, plottype, label=str(d), linewidth=linewidth)
         idx += 1
-    for s, c in zip(compounds,concentration_data[-1]):
-        print(s, c)
     plt.xscale("log")
     plt.yscale("log")
     plt.xlabel("Time (s)")
@@ -336,18 +348,25 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, file):
     plt.show()
 
 def plot_concentrations(concentration_data, compounds):
+    """
+    Plot final concentrations of all compounds
+    """
     import numpy as np
     import matplotlib.pyplot as plt
-   
+    from operator import itemgetter
+
     # Convert last row to floats
     fig, ax = plt.subplots(figsize=(4.8,7.4))
     labels = list(compounds.keys())
     y_positions = np.arange(len(labels))
-   
-    plt.barh(y_positions, concentration_data[-1])   #<-- horizontal bars
-   
-    plt.yticks(y_positions, labels)
+    tmp = sorted(zip(labels, concentration_data[-1]), key=lambda x: len(x[0]), reverse=True)
+    slabels = [a for a, _ in tmp]
+    sconcentration_data = [c for _, c in tmp]
+    sy_positions = np.arange(len(slabels))  # new positions in sorted order
+    
+    plt.barh(sy_positions, sconcentration_data)
+    plt.yticks(sy_positions, slabels)
     plt.xlabel("Concentration")
     plt.xscale("log")
     plt.tight_layout()
-    plt.show() 
+    plt.show()

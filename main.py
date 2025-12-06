@@ -6,7 +6,7 @@ kie = 1
 reactions1 = create_reactions_for_step_one(kie, verbose=False)
 reactions2 = create_reactions_for_step_two(kie, verbose=False)
 concr1 = 1
-concr2 = 1
+concr2 = 2
 p18 = 0.002
 p16 = 0.998
 initial_conc = {(12,16,16,16,16): concr1*p16, 
