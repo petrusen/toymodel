@@ -1,24 +1,40 @@
 from helpfunctions import *
 
-file1 = "deleteme1.png"
-file2 = "deleteme2.png"
-kie = 1
-reactions1 = create_reactions_for_step_one(kie, verbose=False)
-reactions2 = create_reactions_for_step_two(kie, verbose=False)
-concr1 = 1
-concr2 = 2
-p18 = 0.002
-p16 = 0.998
-initial_conc = {(12,16,16,16,16): concr1*p16, 
-                (12,16,16,16,18): concr1*p18, 
-                (16,): concr2*p16,
-                (18,): concr2*p18}
-total_reac = reactions1 + reactions2
+def main():
+     ##### INPUT DEFINITION #####
+     dkie = {"k1_16": 1,
+             "k2_16": 1,
+             "k3_16": 1,
+             "kie1p": 1,
+             "kie1s": 1,
+             "kie2p": 1,
+             "kie2s": 1,
+             "kie3p": 1.005,
+             "kie3s": 1.0005,
+             }
+     
+     file1 = "ratio_vs_time.png"
+     file2 = "conc_vs_time.png"
+     file3 = "final_yields.png"
+     timerange = np.logspace(-8, 5, num=100)
+     penalty = 1e-10
+     delta_O_h2o = 20
+     delta_O_cpo = 10
+     ############################
 
-for r in total_reac:
-    print(r)
 
-concentration_data, time_data, compounds = convert_to_kinetx_notation(total_reac, initial_conc)
-#plot_ratio_vs_time(concentration_data, time_data, compounds, file1)
-plot_conc_vs_time(concentration_data, time_data, compounds, file2)
-plot_concentrations(concentration_data, compounds)
+     initial_conc = get_water_initial_concentrations(delta_O_h2o)
+     initial_conc.update(get_organophosphate_initial_concentrations(delta_O_cpo))
+     reactions1 = create_reactions_for_step_one(dkie, penalty, verbose=False)
+     reactions2 = create_reactions_for_step_two(dkie, penalty, verbose=False)
+     total_reac = reactions1 + reactions2
+     
+     for r in total_reac:
+         print(r)
+     
+     concentration_data, time_data, compounds = convert_to_kinetx_notation(total_reac, initial_conc, timerange)
+     plot_ratio_vs_time(concentration_data, time_data, compounds, dkie, file1)
+     plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file2)
+     plot_concentrations(concentration_data, compounds, dkie, file3)
+
+main()
