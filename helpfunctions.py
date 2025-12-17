@@ -363,39 +363,65 @@ def _is_concentration_sparse(log_values, drop_threshold=60, verbose=True):
             print("Diffs:", diffs)
     return output
 
-def plot_ratio_vs_time(concentration_data, time_data, compounds, dkie, file, Rstd=0.002004):
+def plot_ratio_vs_time(
+    concentration_data,
+    time_data,
+    compounds,
+    dkie,
+    file=None,
+    Rstd=0.002004,
+    ax=None,
+):
     """
-    Convert concentrations to substract ratio of O18/O16. Convention in the field.
+    Convert concentrations to subtract ratio of O18/O16.
+    Convention in the field.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes, optional
+        Axes to plot into. If None, a new figure and axes are created.
+    file : str, optional
+        If provided, the figure is saved to this path.
     """
     import matplotlib.pyplot as plt
-    Rsub = {"CPO4": [], "CPO5": [], "PO4": [], "O":[], "CO":[]}
+
+    # --- create axes if not provided ---
+    created_fig = False
+    if ax is None:
+        fig, ax = plt.subplots()
+        created_fig = True
+    else:
+        fig = ax.figure
+
+    # --- compute ratios ---
+    Rsub = {"CPO4": [], "CPO5": [], "PO4": [], "O": [], "CO": []}
+
     for c in concentration_data:
-        tmpo18, tmpo16 = [], []
         cpo4_18, cpo4_16 = [], []
         cpo5_18, cpo5_16 = [], []
         po4_18, po4_16 = [], []
         o_18, o_16 = [], []
         co_18, co_16 = [], []
-        print("=======================")
+
         for d in compounds:
-            print("??????", d, compounds[d], c[compounds[d]])
-            if len(d) == 1: #O1
-               o_18.append(d.count(18) * c[compounds[d]])
-               o_16.append(d.count(16) * c[compounds[d]])
-            elif len(d) == 2: #CO1
-               co_18.append(d.count(18) * c[compounds[d]])
-               co_16.append(d.count(16) * c[compounds[d]])
-            elif len(d) == 4: # PO4
-               po4_18.append(d.count(18) * c[compounds[d]])
-               po4_16.append(d.count(16) * c[compounds[d]])
-            elif len(d) == 5: #CPO4
-               cpo4_18.append(d.count(18) * c[compounds[d]])
-               cpo4_16.append(d.count(16) * c[compounds[d]])
-            elif len(d) == 6: #CPO5
-               cpo5_18.append(d.count(18) * c[compounds[d]])
-               cpo5_16.append(d.count(16) * c[compounds[d]])
+            idx = compounds[d]
+            if len(d) == 1:      # O
+                o_18.append(d.count(18) * c[idx])
+                o_16.append(d.count(16) * c[idx])
+            elif len(d) == 2:    # CO
+                co_18.append(d.count(18) * c[idx])
+                co_16.append(d.count(16) * c[idx])
+            elif len(d) == 4:    # PO4
+                po4_18.append(d.count(18) * c[idx])
+                po4_16.append(d.count(16) * c[idx])
+            elif len(d) == 5:    # CPO4
+                cpo4_18.append(d.count(18) * c[idx])
+                cpo4_16.append(d.count(16) * c[idx])
+            elif len(d) == 6:    # CPO5
+                cpo5_18.append(d.count(18) * c[idx])
+                cpo5_16.append(d.count(16) * c[idx])
             else:
-                raise ValueError
+                raise ValueError("Unknown compound length")
 
         def _get_zero_safe_ratio(x18, x16):
             den = sum(x16)
@@ -407,34 +433,35 @@ def plot_ratio_vs_time(concentration_data, time_data, compounds, dkie, file, Rst
                 delta = 0
             return delta
 
-        # ratio cpo4
-        for a,b,c in [(cpo4_18,cpo4_16,"CPO4"), (po4_18, po4_16,"PO4"), (cpo5_18,cpo5_16,"CPO5"),
-                      (o_18,o_16,"O"), (co_18, co_16, "CO")]:
-            delta = _get_zero_safe_ratio(a, b)
-            Rsub[c].append(delta)
-            if c == "CPO5":
-                print("///////", [(i, ii) for i,ii in zip(a,b)], delta)
-        
-        
-        print(Rsub["CPO5"])
+        for a, b, key in [
+            (cpo4_18, cpo4_16, "CPO4"),
+            (po4_18,  po4_16,  "PO4"),
+            (cpo5_18, cpo5_16, "CPO5"),
+            (o_18,    o_16,    "O"),
+            (co_18,   co_16,   "CO"),
+        ]:
+            Rsub[key].append(_get_zero_safe_ratio(a, b))
 
+    # --- plotting ---
+    ax.set_xscale("log")
+    for key in Rsub:
+        ax.plot(time_data, Rsub[key], ".-", label=key)
 
-    #plt.rcParams['axes.prop_cycle'] = plt.cycler(color=plt.cm.tab20.colors)
-    fig, ax = plt.subplots()
-    d_ind_stoich = {compounds[d]:d for d in compounds}
-    plt.xscale("log")
-    #plt.yscale("log")
-    for d in Rsub:
-        plt.plot(time_data, Rsub[d], '.-',label=d)
-    plt.xlabel("Time (s)")
-    plt.ylabel("$\delta^{18}$"+"O(S)")
-    #plt.ylim(0, 1000)
-    # Get title
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel(r"$\delta^{18}$O(S)")
+
     titlestr = _get_title(dkie)
-    plt.title(titlestr)
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(file)
+    ax.set_title(titlestr)
+
+    ax.legend()
+
+    if created_fig:
+        fig.tight_layout()
+        if file is not None:
+            fig.savefig(file)
+
+    return ax
+
 
 
 def _get_title(dkie):
@@ -454,43 +481,67 @@ def _get_title(dkie):
     return titlestr
 
 
-def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file):
+def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None, ax=None):
     """
-    Plot evolution of concentrations in time
+    Plot evolution of concentrations in time.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes, optional
+        Axes to plot into. If None, a new figure and axes are created.
+    file : str, optional
+        If provided, the figure is saved to this path.
     """
+    import numpy as np
     import matplotlib.pyplot as plt
-    plt.rcParams['axes.prop_cycle'] = plt.cycler(color=plt.cm.tab20.colors)
-    fig, ax = plt.subplots(figsize=(6.8,8.4))
+
+    # Create axes if not provided
+    created_fig = False
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6.8, 8.4))
+        created_fig = True
+        ax.set_prop_cycle(color=plt.cm.tab20.colors)
+    else:
+        fig = ax.figure
+
     concentration_dataT = np.array(concentration_data).T
     idx = 0
-    d_ind_stoich = {compounds[d]:d for d in compounds}
+
     for d, c in zip(compounds, concentration_dataT):
         if max(c) < 1e-20:
             continue
+
         if idx < 20:
             plottype = '-'
             linewidth = 2
         elif 20 <= idx < 40:
             plottype = '--'
             linewidth = 3.5
-
-        if len(d) == 6:
-            plt.plot(time_data, c, plottype, label=str(d), linewidth=linewidth)
         else:
-            plt.plot(time_data, c, plottype, label=str(d), linewidth=linewidth)
+            plottype = ':'
+            linewidth = 2
+
+        ax.plot(time_data, c, plottype, label=str(d), linewidth=linewidth)
         idx += 1
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Concentration")
 
-    # Get title
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Concentration")
+
+    # Title
     titlestr = _get_title(dkie)
-    plt.title(titlestr)
+    ax.set_title(titlestr)
 
-    plt.tight_layout()
-    plt.legend(loc="lower center", ncol=2)
-    plt.savefig(file)
+    ax.legend(loc="lower center", ncol=2)
+
+    if created_fig:
+        fig.tight_layout()
+        if file is not None:
+            fig.savefig(file)
+
+    return ax
+
 
 def plot_concentrations(concentration_data, compounds, dkie, outfile):
     """
