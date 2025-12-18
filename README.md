@@ -1,11 +1,15 @@
 # Toy model - Kinetics of oxygen isotope effects
 
+![Example Image](example.png)
+*(output example)*
+
 ## 1. Description
 
 Simplistic model with many details removed so that it can be used to explain a mechanism concisely.
 The simplified reaction is:
 
 RO-PO3 + H2O --> RO-PO3-OH2 (k1, k2)
+
 RO-PO3-OH2   --> ROH2 + PO4 (k3, k4)
 
 Each compound is represented by a --unmutable-- tupple with the atomic weight. Hydrogen atoms
@@ -43,7 +47,7 @@ vi config.yaml  # or the text editor of your choice
 
 # Run kinetic simulation
 python main.py
-
+```
 
 ## Support 
 Should you find any problem or bug, please write a message to
