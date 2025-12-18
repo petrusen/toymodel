@@ -28,6 +28,7 @@ Notice that to isotops are introduced by changing the elements of the tupple, e.
 ## 2. Dependencies
 
 Below the dependencies for running the toy model are collected.
+For the record, I tested the code in an Ubuntu 22.04 machine.
 
 | Package         | Version |
 |-----------------|---------|
@@ -41,7 +42,6 @@ Below the dependencies for running the toy model are collected.
 ## 3. Example
 
 ```bash
-
 # Introduce input parameters
 vi config.yaml  # or the text editor of your choice
 
