@@ -2,7 +2,7 @@ import itertools
 import copy
 import numpy as np
 
-def _calculate_rate_constant(lhs, rhs, dkie, penalty):
+def _calculate_rate_constant(lhs, rhs, dkie):
     """
     Heuristic based rate constants. Reverse rate constant is considered 100
     times slower than direct rate constant.
@@ -11,7 +11,6 @@ def _calculate_rate_constant(lhs, rhs, dkie, penalty):
     backward direction.
 
     """
-    #print("! penalty harcoded"); penalty = 1e-10  # hardcoded; can be changed   
     
     k1p_18 = dkie["k1_16"] / dkie["kie1p"]
     k1s_18 = dkie["k1_16"] / dkie["kie1s"]
@@ -22,9 +21,9 @@ def _calculate_rate_constant(lhs, rhs, dkie, penalty):
     k3p_18 = dkie["k3_16"] / dkie["kie3p"]
     k3s_18 = dkie["k3_16"] / dkie["kie3s"]
 
-    k4p_18 = k3p_18 * penalty
-    k4s_18 = k3s_18 * penalty
-    
+    penalty_k2 = dkie["penalty_k2"]
+    penalty_k4 = dkie["penalty_k4"]
+
 
     if len(lhs) == 2:        # reaction 1
         r1, h2o = lhs        # organophosphate and water
@@ -34,33 +33,33 @@ def _calculate_rate_constant(lhs, rhs, dkie, penalty):
         if 18 in h2o:
             kf = k1p_18      # kf depends only on h2o
             if tsi[-1] == 18: 
-                kb = k2p_18 * penalty
+                kb = k2p_18 * penalty_k2
             elif tsi[-1] == 16:
-                kb = k2s_18 * penalty
+                kb = k2s_18 * penalty_k2
         elif 16 in h2o: 
             if 18 in r1: 
                 kf = k1s_18
                 if tsi[-1] == 18:
-                    kb = k2p_18 * penalty
+                    kb = k2p_18 * penalty_k2
                 elif tsi[-1] == 16:
-                    kb = k2p_18 * penalty
+                    kb = k2p_18 * penalty_k2
             else:
                 kf = dkie["k1_16"]
-                kb = dkie["k2_16"] * penalty
+                kb = dkie["k2_16"] * penalty_k2
             
     elif len(lhs) == 1: # reaction 2
         tsi = lhs[0]     # 'transition state' intermediate
         p1, ro = rhs  # phosphate and alcohol
         if 18 in ro:
             kf = k3p_18
-            kb = k3p_18 * penalty
+            kb = k3p_18 * penalty_k4
         else: 
             if 18 in p1:
                 kf = k3s_18
-                kb = k3s_18 * penalty
+                kb = k3s_18 * penalty_k4
             else:
                 kf = dkie["k3_16"]
-                kb = dkie["k3_16"] * penalty
+                kb = dkie["k3_16"] * penalty_k4
     assert kf != None
     assert kb != None
 
@@ -92,7 +91,7 @@ def get_organophosphate_initial_concentrations(delta_O, initial_C=1e-3, Rstd=0.0
     #assert sum([dinitialconc[k] for k in dinitialconc]) == initial_C
     return dinitialconc
 
-def create_reactions_for_step_one(dkie, penalty, verbose=False):
+def create_reactions_for_step_one(dkie, verbose=False):
     """
     Function to create all combinations of isotops with the following shape:
 
@@ -119,7 +118,7 @@ def create_reactions_for_step_one(dkie, penalty, verbose=False):
            lhs_po4.pop()
            tmprhs = (tuple(_rhs_po5),)
            tmplhs = (tuple(lhs_po4), (h2o,))
-           kd, kr = _calculate_rate_constant(tmplhs, tmprhs, dkie, penalty)
+           kd, kr = _calculate_rate_constant(tmplhs, tmprhs, dkie)
            reactions.append((tmplhs, tmprhs, kd, kr))
 
     if verbose: 
@@ -129,7 +128,7 @@ def create_reactions_for_step_one(dkie, penalty, verbose=False):
     return reactions
 
 
-def create_reactions_for_step_two(dkie, penalty, verbose=False):
+def create_reactions_for_step_two(dkie, verbose=False):
     """
     Function to create all combinations of isotops with the following shape:
 
@@ -148,19 +147,31 @@ def create_reactions_for_step_two(dkie, penalty, verbose=False):
         comb_po5 = list([list(o) for o in set(itertools.permutations(template))])
         print("=======================================", comb_po5)
         for lhs_po5 in comb_po5:
-                # the oxygen can only be lost from one specific position (arbitrarely [-1])
+                #_lhs_po5 = [12] + lhs_po5.copy()
+                #rhs_po4 = _lhs_po5.copy()
+                #h2o = rhs_po4[-1]
+                #c = rhs_po4[0]
+                #assert c == 12
+                #rhs_po4.pop()
+                #rhs_po4.pop(0)
+                #tmplhs = (tuple(_lhs_po5),)
+                #tmprhs = (tuple(rhs_po4), (c, h2o))
+                #kd, kr = _calculate_rate_constant(tmplhs, tmprhs, dkie)
+                #reactions.append((tmplhs, tmprhs, kd, kr))
+    
+
                 _lhs_po5 = [12] + lhs_po5.copy()
                 rhs_po4 = _lhs_po5.copy()
-                h2o = rhs_po4[-1]
+                o = rhs_po4[1]
                 c = rhs_po4[0]
                 assert c == 12
-                rhs_po4.pop()
+                rhs_po4.pop(0)
                 rhs_po4.pop(0)
                 tmplhs = (tuple(_lhs_po5),)
-                tmprhs = (tuple(rhs_po4), (c, h2o))
-                kd, kr = _calculate_rate_constant(tmplhs, tmprhs, dkie, penalty)
+                tmprhs = (tuple(rhs_po4), (c, o))
+                kd, kr = _calculate_rate_constant(tmplhs, tmprhs, dkie)
                 reactions.append((tmplhs, tmprhs, kd, kr))
-    
+
     #reactions_worep = list(set(reactions))
     if verbose:
         for r in reactions_worep:
@@ -219,13 +230,13 @@ def convert_to_kinetx_notation(reactions, initial_conc, timerange, verbose=True)
                 edges.append((E1, E2))
         network_builder.add_reaction([kd], [kr], lhs, rhs)
     #
-    import matplotlib.pyplot as plt
-    G = nx.Graph()
-    G.add_edges_from(edges)
-    plt.figure(figsize=(10,8))
-    pos = nx.spring_layout(G)
-    nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=600, arrows=True)
-    plt.savefig("test.png")
+    #import matplotlib.pyplot as plt
+    #G = nx.Graph()
+    #G.add_edges_from(edges)
+    #plt.figure(figsize=(10,8))
+    #pos = nx.spring_layout(G)
+    #nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=600, arrows=True)
+    #plt.savefig("test.png")
     
     concentration_data, time_data = [], []
     network = network_builder.generate()
@@ -242,7 +253,7 @@ def convert_to_kinetx_notation(reactions, initial_conc, timerange, verbose=True)
     #timerange = np.logspace(-8, 5, num=10000)
     #timerange = np.linspace(0, 1e+2, num=10)
     concentration_data.append(concentrations)
-    time_data.append(0)
+    time_data.append(timerange[0])
     for idx in range(len(timerange)-1):
         tstart = timerange[idx]
         maxtime = timerange[idx+1]
@@ -363,6 +374,16 @@ def _is_concentration_sparse(log_values, drop_threshold=60, verbose=True):
             print("Diffs:", diffs)
     return output
 
+def _get_zero_safe_ratio(x18, x16):
+    den = sum(x16)
+    num = sum(x18)
+    if den > 0 and num > 0:
+        ratio = num / den
+        delta = ((ratio / Rstd) - 1) * 1000
+    else:
+        delta = 0
+    return delta
+
 def plot_ratio_vs_time(
     concentration_data,
     time_data,
@@ -445,15 +466,15 @@ def plot_ratio_vs_time(
     # --- plotting ---
     ax.set_xscale("log")
     for key in Rsub:
-        ax.plot(time_data, Rsub[key], ".-", label=key)
+        ax.plot(time_data, Rsub[key], label=key)
 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(r"$\delta^{18}$O(S)")
 
     titlestr = _get_title(dkie)
-    ax.set_title(titlestr)
+    #ax.set_title(titlestr)
 
-    ax.legend()
+    ax.legend(ncols=5)
 
     if created_fig:
         fig.tight_layout()
@@ -463,15 +484,119 @@ def plot_ratio_vs_time(
     return ax
 
 
+def plot_ratio_vs_reaction_progress(
+    concentration_data,
+    time_data,
+    compounds,
+    dkie,
+    file=None,
+    Rstd=0.002004,
+    ax=None,
+):
+    """
+    Convert concentrations to subtract ratio of O18/O16.
+    Convention in the field.
 
-def _get_title(dkie):
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes, optional
+        Axes to plot into. If None, a new figure and axes are created.
+    file : str, optional
+        If provided, the figure is saved to this path.
+    """
+    import matplotlib.pyplot as plt
+
+    # --- create axes if not provided ---
+    created_fig = False
+    if ax is None:
+        fig, ax = plt.subplots()
+        created_fig = True
+    else:
+        fig = ax.figure
+
+    # --- compute ratios ---
+    Rsub = {"CPO4": [], "CPO5": [], "PO4": [], "O": [], "CO": []}
+
+    for c in concentration_data:
+        cpo4_18, cpo4_16 = [], []
+        cpo5_18, cpo5_16 = [], []
+        po4_18, po4_16 = [], []
+        o_18, o_16 = [], []
+        co_18, co_16 = [], []
+
+        for d in compounds:
+            idx = compounds[d]
+            if len(d) == 1:      # O
+                o_18.append(d.count(18) * c[idx])
+                o_16.append(d.count(16) * c[idx])
+            elif len(d) == 2:    # CO
+                co_18.append(d.count(18) * c[idx])
+                co_16.append(d.count(16) * c[idx])
+            elif len(d) == 4:    # PO4
+                po4_18.append(d.count(18) * c[idx])
+                po4_16.append(d.count(16) * c[idx])
+            elif len(d) == 5:    # CPO4
+                cpo4_18.append(d.count(18) * c[idx])
+                cpo4_16.append(d.count(16) * c[idx])
+            elif len(d) == 6:    # CPO5
+                cpo5_18.append(d.count(18) * c[idx])
+                cpo5_16.append(d.count(16) * c[idx])
+            else:
+                raise ValueError("Unknown compound length")
+
+        def _get_zero_safe_ratio(x18, x16):
+            den = sum(x16)
+            num = sum(x18)
+            if den > 0 and num > 0:
+                ratio = num / den
+                delta = ((ratio / Rstd) - 1) * 1000
+            else:
+                delta = 0
+            return delta
+
+        for a, b, key in [
+            (cpo4_18, cpo4_16, "CPO4"),
+            (po4_18,  po4_16,  "PO4"),
+            (cpo5_18, cpo5_16, "CPO5"),
+            (o_18,    o_16,    "O"),
+            (co_18,   co_16,   "CO"),
+        ]:
+            Rsub[key].append(_get_zero_safe_ratio(a, b))
+    
+    concentration_data_T = np.array(concentration_data).T
+    reacind = compounds[(12, 16, 16, 16, 16)]
+    reaction_progress = concentration_data_T[reacind]
+    reaction_progress_norm = [r/reaction_progress[0] for r in reaction_progress]
+    print(reaction_progress_norm)
+    # --- plotting ---
+    #ax.set_xscale("log")
+    for key in Rsub:
+        ax.plot(reaction_progress_norm, Rsub[key], label=key)
+
+    ax.set_xlabel("Reaction progress respect to (12, 16, 16, 16, 16)")
+    ax.set_ylabel(r"$\delta^{18}$O(S)")
+    ax.invert_xaxis()
+    titlestr = _get_title(dkie)
+    #ax.set_title(titlestr)
+
+    ax.legend(ncols=5)
+
+    if created_fig:
+        fig.tight_layout()
+        if file is not None:
+            fig.savefig(file)
+
+    return ax
+
+
+def _get_title(dkie, cntthresh=6):
     """
     Create title from the defined dkie. Done for keeping the record.
     """
     cnt = 1
     titlelist = []
     for d in dkie:
-        if cnt == 4:
+        if cnt == cntthresh:
             cnt = 0
             titlelist.append(d+"="+str(dkie[d])+"\n")
         else:
@@ -479,6 +604,26 @@ def _get_title(dkie):
         cnt += 1
     titlestr = "  ".join(titlelist)
     return titlestr
+
+def plot_mk_information(dkie, handles, labels, ax):
+    """
+    Placeholder information plot
+    """
+    # Create axes if not provided
+    created_fig = False
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6.8, 8.4))
+        created_fig = True
+        ax.set_prop_cycle(color=plt.cm.tab20.colors)
+    else:
+        fig = ax.figure
+    string = _get_title(dkie, cntthresh=1)
+    string2 = "MK information:\n\n" + string
+    ax.text(0.8, 0.5, string2, transform=ax.transAxes, ha='left', va='center', fontsize=12)
+    ax.axis('off')
+    ax.legend(handles, labels, ncols=2, loc="center left")
+
+    return ax
 
 
 def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None, ax=None):
@@ -494,6 +639,8 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None,
     """
     import numpy as np
     import matplotlib.pyplot as plt
+    from cycler import cycler
+    ax.set_prop_cycle(cycler(color=plt.cm.tab20.colors))
 
     # Create axes if not provided
     created_fig = False
@@ -530,17 +677,19 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None,
     ax.set_ylabel("Concentration")
 
     # Title
-    titlestr = _get_title(dkie)
-    ax.set_title(titlestr)
+    #titlestr = _get_title(dkie)
+    #ax.set_title(titlestr)
 
-    ax.legend(loc="lower center", ncol=2)
+    ##ax.legend(loc="lower center", ncol=2)
 
     if created_fig:
         fig.tight_layout()
         if file is not None:
             fig.savefig(file)
-
+    
     return ax
+
+
 
 
 def plot_concentrations(concentration_data, compounds, dkie, outfile):
