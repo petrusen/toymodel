@@ -9,7 +9,7 @@ dkie:
   kie3p: 1
   kie3s: 1
   penalty_k2: 1
-  penalty_k4: 1
+  penalty_k4: 0.001
   dh2o: 20
   dcpo: 10
   conc_h2o: 55.5

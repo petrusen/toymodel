@@ -49,7 +49,7 @@ def main():
 
      # Plot results
      fig, axes = plt.subplots(2, 2, figsize=(14, 9))
-     ax1, ax2, ax3, ax4 = axes[0,0], [1,0], [0,1], [1,1]
+     ax1, ax2, ax3, ax4 = axes[0, 0], axes[0, 1], axes[1, 0], axes[1, 1]
      plot_conc_vs_time(conc_data, t_data, compounds, dkie, ax=ax1)
      plot_ratio_vs_reaction_progress(conc_data, t_data, compounds, dkie, ax=ax4)
      plot_ratio_vs_time(conc_data, t_data, compounds, dkie, ax=ax2)
