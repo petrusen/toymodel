@@ -88,7 +88,7 @@ def plot_ratio_vs_time(
 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(r"$\delta^{18}$O(S)")
-
+    #ax.set_yscale("log")
     titlestr = _get_title(dkie)
     #ax.set_title(titlestr)
 
@@ -100,6 +100,92 @@ def plot_ratio_vs_time(
             fig.savefig(file)
 
     return ax
+
+
+def plot_ratio_vs_time_separate(
+    concentration_data,
+    time_data,
+    compounds,
+    dkie,
+    file=None,
+    Rstd=0.002004,
+):
+    """
+    Convert concentrations to subtract ratio of O18/O16.
+    Convention in the field.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes, optional
+        Axes to plot into. If None, a new figure and axes are created.
+    file : str, optional
+        If provided, the figure is saved to this path.
+    """
+    import matplotlib.pyplot as plt
+
+    # --- compute ratios ---
+    Rsub = {"CPO4": [], "CPO5": [], "PO4": [], "O": [], "CO": []}
+
+    for c in concentration_data:
+        cpo4_18, cpo4_16 = [], []
+        cpo5_18, cpo5_16 = [], []
+        po4_18, po4_16 = [], []
+        o_18, o_16 = [], []
+        co_18, co_16 = [], []
+
+        for d in compounds:
+            idx = compounds[d]
+            if len(d) == 1:      # O
+                o_18.append(d.count(18) * c[idx])
+                o_16.append(d.count(16) * c[idx])
+            elif len(d) == 2:    # CO
+                co_18.append(d.count(18) * c[idx])
+                co_16.append(d.count(16) * c[idx])
+            elif len(d) == 4:    # PO4
+                po4_18.append(d.count(18) * c[idx])
+                po4_16.append(d.count(16) * c[idx])
+            elif len(d) == 5:    # CPO4
+                cpo4_18.append(d.count(18) * c[idx])
+                cpo4_16.append(d.count(16) * c[idx])
+            elif len(d) == 6:    # CPO5
+                cpo5_18.append(d.count(18) * c[idx])
+                cpo5_16.append(d.count(16) * c[idx])
+            else:
+                raise ValueError("Unknown compound length")
+
+        def _get_zero_safe_ratio(x18, x16):
+            den = sum(x16)
+            num = sum(x18)
+            if den > 0 and num > 0:
+                ratio = num / den
+                delta = ((ratio / Rstd) - 1) * 1000
+            else:
+                delta = 0
+            return delta
+
+        for a, b, key in [
+            (cpo4_18, cpo4_16, "CPO4"),
+            (po4_18,  po4_16,  "PO4"),
+            (cpo5_18, cpo5_16, "CPO5"),
+            (o_18,    o_16,    "O"),
+            (co_18,   co_16,   "CO"),
+        ]:
+            Rsub[key].append(_get_zero_safe_ratio(a, b))
+
+    # --- plotting ---
+    for key in Rsub:
+        fig, ax = plt.subplots()
+        #ax.ticklabel_format(axis='y', style='plain', useOffset=False)
+        ax.set_xscale("log")
+        ax.plot(time_data, Rsub[key], label=key)
+        tmpname = file.split(".")[0] + "_O_vs_time" + "_" + key + ".png"
+        ax.legend()
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel(r"$\delta^{18}$O(S)")
+        plt.tight_layout()
+        plt.savefig(tmpname)
+
+    return None
 
 
 def plot_ratio_vs_reaction_progress(
@@ -192,6 +278,7 @@ def plot_ratio_vs_reaction_progress(
 
     ax.set_xlabel("Reaction progress respect to (12, 16, 16, 16, 16)")
     ax.set_ylabel(r"$\delta^{18}$O(S)")
+    #ax.set_yscale("log")
     ax.invert_xaxis()
     titlestr = _get_title(dkie)
     #ax.set_title(titlestr)
@@ -305,5 +392,7 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None,
             fig.savefig(file)
     
     return ax
+
+
 
 

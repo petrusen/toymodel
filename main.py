@@ -12,7 +12,8 @@ from mk_module import (get_water_initial_concentrations,
 from plot_module import (plot_conc_vs_time, 
                          plot_ratio_vs_reaction_progress, 
                          plot_ratio_vs_time, 
-                         plot_mk_information)
+                         plot_mk_information,
+                         plot_ratio_vs_time_separate)
 
 def main():
 
@@ -48,6 +49,9 @@ def main():
      conc_data, t_data, compounds = simdata
 
      # Plot results
+
+     plot_ratio_vs_time_separate(conc_data, t_data, compounds, dkie, file=outfile)
+
      fig, axes = plt.subplots(2, 2, figsize=(14, 9))
      ax1, ax2, ax3, ax4 = axes[0, 0], axes[1, 0], axes[0, 1], axes[1, 1]
      plot_conc_vs_time(conc_data, t_data, compounds, dkie, ax=ax1)

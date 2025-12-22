@@ -6,16 +6,16 @@ dkie:
   kie1s: 1
   kie2p: 1
   kie2s: 1
-  kie3p: 1
-  kie3s: 1
+  kie3p: 1.03
+  kie3s: 1.005
   penalty_k2: 1
-  penalty_k4: 0.001
-  dh2o: 0
+  penalty_k4: 0.0000000001
+  dh2o: 20
   dcpo: 10
   conc_h2o: 55.5
   conc_cpo: 0.001
 
-outfile: mk_scenario_1_1b.png
+outfile: mk_scenario_1_7.png
 
 timerange:
   type: logspace
