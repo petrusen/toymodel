@@ -145,19 +145,6 @@ def create_reactions_for_step_two(dkie, verbose=False):
     for template in [[16, 16, 16, 16, 16],[18, 16, 16, 16, 16], [18, 18, 16, 16, 16]]: # only four out of five labile oxygens
         comb_po5 = list([list(o) for o in set(itertools.permutations(template))])
         for lhs_po5 in comb_po5:
-                #_lhs_po5 = [12] + lhs_po5.copy()
-                #rhs_po4 = _lhs_po5.copy()
-                #h2o = rhs_po4[-1]
-                #c = rhs_po4[0]
-                #assert c == 12
-                #rhs_po4.pop()
-                #rhs_po4.pop(0)
-                #tmplhs = (tuple(_lhs_po5),)
-                #tmprhs = (tuple(rhs_po4), (c, h2o))
-                #kd, kr = _calculate_rate_constant(tmplhs, tmprhs, dkie)
-                #reactions.append((tmplhs, tmprhs, kd, kr))
-    
-
                 _lhs_po5 = [12] + lhs_po5.copy()
                 rhs_po4 = _lhs_po5.copy()
                 o = rhs_po4[1]
@@ -247,9 +234,6 @@ def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose
     nbatches = 10000
     maxtime = 0
     convergence = 1e-10
-    #timerange = np.logspace(-8, -2, num=1000)
-    #timerange = np.logspace(-8, 5, num=10000)
-    #timerange = np.linspace(0, 1e+2, num=10)
     concentration_data.append(concentrations)
     time_data.append(timerange[0])
     for idx in range(len(timerange)-1):
@@ -273,6 +257,9 @@ def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose
 
 
 def _read_crn_data(file):
+    """
+    Not related to the toy model
+    """
     import ast   
     data = []
     with open(file, "r") as infile:
@@ -287,7 +274,9 @@ def _read_crn_data(file):
 
 
 def calculate_mk_yields(nodesfile, edgesfile, labelsfile):
-    
+    """
+    Not related to the toy model
+    """
     import scine_kinetx as kx
     import numpy as np
     nodesdata = _read_crn_data(nodesfile)
@@ -369,13 +358,4 @@ def _is_concentration_sparse(log_values, drop_threshold=60, verbose=True):
             print("Diffs:", diffs)
     return output
 
-def _get_zero_safe_ratio(x18, x16):
-    den = sum(x16)
-    num = sum(x18)
-    if den > 0 and num > 0:
-        ratio = num / den
-        delta = ((ratio / Rstd) - 1) * 1000
-    else:
-        delta = 0
-    return delta
 

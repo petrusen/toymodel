@@ -48,10 +48,10 @@ def main():
      simdata = calculate_concentrations_from_mk(total_reac, initial_conc, timerange)
      conc_data, t_data, compounds = simdata
 
-     # Plot results
-
+     # Plot 5 separate figures for each dO vs time
      plot_ratio_vs_time_separate(conc_data, t_data, compounds, dkie, file=outfile)
-
+     
+     # Plot four panel figure
      fig, axes = plt.subplots(2, 2, figsize=(14, 9))
      ax1, ax2, ax3, ax4 = axes[0, 0], axes[1, 0], axes[0, 1], axes[1, 1]
      plot_conc_vs_time(conc_data, t_data, compounds, dkie, ax=ax1)

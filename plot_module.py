@@ -2,6 +2,19 @@ import itertools
 import copy
 import numpy as np
 
+def _get_zero_safe_ratio(x18, x16, Rstd=0.002004):
+    """
+    Avoid dividing by zero.
+    """
+    den = sum(x16)
+    num = sum(x18)
+    if den > 0 and num > 0:
+        ratio = num / den
+        delta = ((ratio / Rstd) - 1) * 1000
+    else:
+        delta = 0
+    return delta
+
 def plot_ratio_vs_time(
     concentration_data,
     time_data,
@@ -61,16 +74,6 @@ def plot_ratio_vs_time(
                 cpo5_16.append(d.count(16) * c[idx])
             else:
                 raise ValueError("Unknown compound length")
-
-        def _get_zero_safe_ratio(x18, x16):
-            den = sum(x16)
-            num = sum(x18)
-            if den > 0 and num > 0:
-                ratio = num / den
-                delta = ((ratio / Rstd) - 1) * 1000
-            else:
-                delta = 0
-            return delta
 
         for a, b, key in [
             (cpo4_18, cpo4_16, "CPO4"),
@@ -152,16 +155,6 @@ def plot_ratio_vs_time_separate(
                 cpo5_16.append(d.count(16) * c[idx])
             else:
                 raise ValueError("Unknown compound length")
-
-        def _get_zero_safe_ratio(x18, x16):
-            den = sum(x16)
-            num = sum(x18)
-            if den > 0 and num > 0:
-                ratio = num / den
-                delta = ((ratio / Rstd) - 1) * 1000
-            else:
-                delta = 0
-            return delta
 
         for a, b, key in [
             (cpo4_18, cpo4_16, "CPO4"),
@@ -247,16 +240,6 @@ def plot_ratio_vs_reaction_progress(
                 cpo5_16.append(d.count(16) * c[idx])
             else:
                 raise ValueError("Unknown compound length")
-
-        def _get_zero_safe_ratio(x18, x16):
-            den = sum(x16)
-            num = sum(x18)
-            if den > 0 and num > 0:
-                ratio = num / den
-                delta = ((ratio / Rstd) - 1) * 1000
-            else:
-                delta = 0
-            return delta
 
         for a, b, key in [
             (cpo4_18, cpo4_16, "CPO4"),
