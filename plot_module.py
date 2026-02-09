@@ -23,6 +23,7 @@ def plot_ratio_vs_time(
     file=None,
     Rstd=0.002004,
     ax=None,
+    writecsv=False
 ):
     """
     Convert concentrations to subtract ratio of O18/O16.
@@ -88,6 +89,15 @@ def plot_ratio_vs_time(
     ax.set_xscale("log")
     for key in Rsub:
         ax.plot(time_data, Rsub[key], label=key)
+
+    if writecsv is not False:
+        safedata = []
+        safedata.append(time_data)
+        for key in Rsub:
+            safedata.append(Rsub[key])
+        safedataT = np.array(safedata).T
+        np.savetxt(writecsv, safedataT, delimiter=",")
+
 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(r"$\delta^{18}$O(S)")
