@@ -199,6 +199,7 @@ def plot_ratio_vs_reaction_progress(
     file=None,
     Rstd=0.002004,
     ax=None,
+    reactionref=False
 ):
     """
     Convert concentrations to subtract ratio of O18/O16.
@@ -223,33 +224,41 @@ def plot_ratio_vs_reaction_progress(
 
     # --- compute ratios ---
     Rsub = {"CPO4": [], "CPO5": [], "PO4": [], "O": [], "CO": []}
-
+    Csumi = {"CPO4": [], "CPO5": [], "PO4": [], "O": [], "CO": []}
     for c in concentration_data:
         cpo4_18, cpo4_16 = [], []
         cpo5_18, cpo5_16 = [], []
         po4_18, po4_16 = [], []
         o_18, o_16 = [], []
         co_18, co_16 = [], []
-
+        Csumj = {"CPO4": [], "CPO5": [], "PO4": [], "O": [], "CO": []}
         for d in compounds:
             idx = compounds[d]
             if len(d) == 1:      # O
                 o_18.append(d.count(18) * c[idx])
                 o_16.append(d.count(16) * c[idx])
+                Csumj["O"].append(c[idx])
             elif len(d) == 2:    # CO
                 co_18.append(d.count(18) * c[idx])
                 co_16.append(d.count(16) * c[idx])
+                Csumj["CO"].append(c[idx])
             elif len(d) == 4:    # PO4
                 po4_18.append(d.count(18) * c[idx])
                 po4_16.append(d.count(16) * c[idx])
+                Csumj["PO4"].append(c[idx])
             elif len(d) == 5:    # CPO4
                 cpo4_18.append(d.count(18) * c[idx])
                 cpo4_16.append(d.count(16) * c[idx])
+                Csumj["CPO4"].append(c[idx])
             elif len(d) == 6:    # CPO5
                 cpo5_18.append(d.count(18) * c[idx])
                 cpo5_16.append(d.count(16) * c[idx])
+                Csumj["CPO5"].append(c[idx])
             else:
                 raise ValueError("Unknown compound length")
+
+        for key in Csumj.keys():
+            Csumi[key].append(sum(Csumj[key]))
 
         for a, b, key in [
             (cpo4_18, cpo4_16, "CPO4"),
@@ -261,15 +270,23 @@ def plot_ratio_vs_reaction_progress(
             Rsub[key].append(_get_zero_safe_ratio(a, b))
     
     concentration_data_T = np.array(concentration_data).T
-    reacind = compounds[(12, 16, 16, 16, 16)]
-    reaction_progress = concentration_data_T[reacind]
-    reaction_progress_norm = [r/reaction_progress[0] for r in reaction_progress]
-    # --- plotting ---
-    #ax.set_xscale("log")
-    for key in Rsub:
-        ax.plot(reaction_progress_norm, Rsub[key], label=key)
-
-    ax.set_xlabel("Reaction progress respect to (12, 16, 16, 16, 16)")
+    
+    # reaction progress reference selected by the user
+    if isinstance(reactionref, tuple): 
+        # --- plotting ---
+        reacind = compounds[reactionref]
+        reaction_progress = concentration_data_T[reacind]
+        reaction_progress_norm = [r/reaction_progress[0] for r in reaction_progress]
+        for key in Rsub:
+            ax.plot(reaction_progress_norm, Rsub[key], label=key)
+        ax.set_xlabel("Reaction progress respect to {a}".format(a=str(reactionref)))
+    elif isinstance(reactionref, str):
+        # --- plotting ---
+        reaction_progress_norm = [r/Csumi[reactionref][0] for r in Csumi[reactionref]]
+        for key in Rsub:
+            ax.plot(reaction_progress_norm, Rsub[key], label=key)
+        ax.set_xlabel("Reaction progress respect to {a}".format(a=reactionref))
+    
     ax.set_ylabel(r"$\delta^{18}$O(S)")
     #ax.set_yscale("log")
     ax.invert_xaxis()
