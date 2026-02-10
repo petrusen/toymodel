@@ -199,7 +199,8 @@ def plot_ratio_vs_reaction_progress(
     file=None,
     Rstd=0.002004,
     ax=None,
-    reactionref=False
+    reactionref=(12, 16, 16, 16, 16),
+    writecsv=False
 ):
     """
     Convert concentrations to subtract ratio of O18/O16.
@@ -299,6 +300,16 @@ def plot_ratio_vs_reaction_progress(
         fig.tight_layout()
         if file is not None:
             fig.savefig(file)
+
+
+    if writecsv is not False:
+        safedata = []
+        safedata.append(reaction_progress_norm)
+        for key in Rsub:
+            safedata.append(Rsub[key])
+        safedataT = np.array(safedata).T
+        header = "Reaction Progress {a}".format(a=reactionref)+","+",".join(Rsub.keys())
+        np.savetxt(writecsv.split(".")[0]+".csv", safedataT, delimiter=",", header=header)
 
     return ax
 

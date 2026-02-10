@@ -1,13 +1,13 @@
 dkie:
-  k1_16: 100
-  k2_16: 100
-  k3_16: 1
-  kie1p: 1.02
-  kie1s: 1.005
+  k1_16: 1
+  k2_16: 0.1
+  k3_16: 100
+  kie1p: 1
+  kie1s: 1
   kie2p: 1
   kie2s: 1
-  kie3p: 1.03
-  kie3s: 1.005
+  kie3p: 1
+  kie3s: 1
   penalty_k2: 1
   penalty_k4: 0.0000000001
   dh2o: 20
@@ -15,7 +15,7 @@ dkie:
   conc_h2o: 55.5
   conc_cpo: 0.001
 
-outfile: mk_scenario_3_9.png
+outfile: mk_scenario_feb10_v2.png
 
 timerange:
   type: logspace

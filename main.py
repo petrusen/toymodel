@@ -49,14 +49,14 @@ def main():
      conc_data, t_data, compounds = simdata
 
      # Plot 5 separate figures for each dO vs time
-     plot_ratio_vs_time_separate(conc_data, t_data, compounds, dkie, file=outfile)
+     #plot_ratio_vs_time_separate(conc_data, t_data, compounds, dkie, file=outfile)
      
      # Plot four panel figure
      fig, axes = plt.subplots(2, 2, figsize=(14, 9))
      ax1, ax2, ax3, ax4 = axes[0, 0], axes[1, 0], axes[0, 1], axes[1, 1]
      plot_conc_vs_time(conc_data, t_data, compounds, dkie, ax=ax1)
-     plot_ratio_vs_reaction_progress(conc_data, t_data, compounds, dkie, ax=ax4, reactionref="CPO4")
-     plot_ratio_vs_time(conc_data, t_data, compounds, dkie, ax=ax2, writecsv="nora.csv")
+     plot_ratio_vs_reaction_progress(conc_data, t_data, compounds, dkie, ax=ax4, reactionref="CPO4", writecsv=outfile)
+     plot_ratio_vs_time(conc_data, t_data, compounds, dkie, ax=ax2)
      handles, labels = ax1.get_legend_handles_labels()
      plot_mk_information(dkie, handles, labels, ax=ax3)
      plt.tight_layout()
