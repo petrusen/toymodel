@@ -21,6 +21,9 @@ def _calculate_rate_constant(lhs, rhs, dkie):
     k3p_18 = dkie["k3_16"] / dkie["kie3p"]
     k3s_18 = dkie["k3_16"] / dkie["kie3s"]
 
+    k4p_18 = dkie["k4_16"] / dkie["kie4p"]
+    k4s_18 = dkie["k4_16"] / dkie["kie4s"]
+
     penalty_k2 = dkie["penalty_k2"]
     penalty_k4 = dkie["penalty_k4"]
 
@@ -52,14 +55,14 @@ def _calculate_rate_constant(lhs, rhs, dkie):
         p1, ro = rhs  # phosphate and alcohol
         if 18 in ro:
             kf = k3p_18
-            kb = k3p_18 * penalty_k4
+            kb = k4p_18 * penalty_k4
         else: 
             if 18 in p1:
                 kf = k3s_18
-                kb = k3s_18 * penalty_k4
+                kb = k4s_18 * penalty_k4
             else:
                 kf = dkie["k3_16"]
-                kb = dkie["k3_16"] * penalty_k4
+                kb = dkie["k4_16"] * penalty_k4
     assert kf != None
     assert kb != None
 
