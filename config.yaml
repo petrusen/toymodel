@@ -1,25 +1,35 @@
 dkie:
-  k1_16: 1
-  k2_16: 0.1
-  k3_16: 100
-  kie1p: 1
-  kie1s: 1
+  k1_16: 100
+  k2_16: 100
+  k3_16: 1
+  k4_16: 1
+  kie1p: 1.02
+  kie1s: 1.005
   kie2p: 1
   kie2s: 1
   kie3p: 1
-  kie3s: 1
+  kie3s: 1.03
+  kie4s: 1.005
+  kie4p: 1
   penalty_k2: 1
   penalty_k4: 0.0000000001
   dh2o: 20
   dcpo: 10
+  dco: 0
+  dpo: 0
   conc_h2o: 55.5
   conc_cpo: 0.001
+  conc_co: 0
+  conc_po: 0
 
-outfile: mk_scenario_feb10_v2.png
+plot:
+  pngfile: mk_scenario_feb23_v3.png
+  csvfile: mk_scenario_feb23_v3.csv
+  rxnref: "CPO4"
 
 timerange:
   type: logspace
   start: -8
-  stop: -2
+  stop: +4
   num: 100
 

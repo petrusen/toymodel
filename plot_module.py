@@ -1,6 +1,7 @@
 import itertools
 import copy
 import numpy as np
+import matplotlib.pyplot as plt
 
 def _get_zero_safe_ratio(x18, x16, Rstd=0.002004):
     """
@@ -330,6 +331,27 @@ def _get_title(dkie, cntthresh=6):
     titlestr = "  ".join(titlelist)
     return titlestr
 
+def _create_extended_tab20():
+    """
+    Due to the large amount of compounds formed in the MKs simulations
+    I have extended the color legend.
+    """
+
+    tab20 = plt.cm.tab20.colors  # returns 20 RGB tuples
+    extended_colors = []
+
+    for i in range(0, 20, 2):  # step by 2, since pairs are dark/light
+        dark = np.array(tab20[i])
+        light = np.array(tab20[i+1])
+
+        # Create a medium color by blending dark and light (alpha blending)
+        alpha = 0.5
+        medium = alpha * dark + (1 - alpha) * light
+
+        extended_colors.extend([dark, medium, light])
+
+    return extended_colors
+
 def plot_mk_information(dkie, handles, labels, ax):
     """
     Placeholder information plot
@@ -339,12 +361,13 @@ def plot_mk_information(dkie, handles, labels, ax):
     if ax is None:
         fig, ax = plt.subplots(figsize=(6.8, 8.4))
         created_fig = True
-        ax.set_prop_cycle(color=plt.cm.tab20.colors)
+        colors = _create_extended_tab20() 
+        ax.set_prop_cycle(color=colors)
+        #ax.set_prop_cycle(color=plt.cm.tab20.colors)
     else:
         fig = ax.figure
     string = _get_title(dkie, cntthresh=1)
-    string2 = "MK information:\n\n" + string
-    ax.text(0.8, 0.5, string2, transform=ax.transAxes, ha='left', va='center', fontsize=12)
+    ax.text(0.75, 0.5, string, transform=ax.transAxes, ha='left', va='center', fontsize=11)
     ax.axis('off')
     ax.legend(handles, labels, ncols=2, loc="center left")
 
@@ -365,14 +388,18 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None,
     import numpy as np
     import matplotlib.pyplot as plt
     from cycler import cycler
-    ax.set_prop_cycle(cycler(color=plt.cm.tab20.colors))
+    colors = _create_extended_tab20()
+    ax.set_prop_cycle(color=colors)
+    #ax.set_prop_cycle(cycler(color=plt.cm.tab20.colors))
 
     # Create axes if not provided
     created_fig = False
     if ax is None:
         fig, ax = plt.subplots(figsize=(6.8, 8.4))
         created_fig = True
-        ax.set_prop_cycle(color=plt.cm.tab20.colors)
+        colors = _create_extended_tab20()
+        ax.set_prop_cycle(color=colors)
+        #ax.set_prop_cycle(color=plt.cm.tab20.colors)
     else:
         fig = ax.figure
 
@@ -383,12 +410,12 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None,
         if max(c) < 1e-20:
             continue
 
-        if idx < 20:
+        if idx < 30:
             plottype = '-'
             linewidth = 2
-        elif 20 <= idx < 40:
+        elif 30 <= idx < 60:
             plottype = '--'
-            linewidth = 3.5
+            linewidth = 2.5
         else:
             plottype = ':'
             linewidth = 2

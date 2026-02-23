@@ -1,6 +1,7 @@
 import itertools
 import copy
 import numpy as np
+import math
 
 def _calculate_rate_constant(lhs, rhs, dkie):
     """
@@ -77,6 +78,19 @@ def get_water_initial_concentrations(delta_O, initial_C=55.5, Rstd=0.002004):
     c18_0 = c16_0 * r0_h2o
     dinitialconc = {(16,): c16_0, (18,): c18_0}
     #assert sum([dinitialconc[k] for k in dinitialconc]) == initial_C
+    assert math.isclose(sum(dinitialconc[k] for k in dinitialconc), initial_C, rel_tol=1e-9)
+    return dinitialconc
+
+def get_alcohol_initial_concentrations(delta_O, initial_C=55.5, Rstd=0.002004):
+    """
+    Get the concentration of H2O(18) and H2O(16)
+    """
+    r0_alc = (delta_O / 1000 + 1) * Rstd
+    c16_0 = initial_C / (1 + r0_alc)
+    c18_0 = c16_0 * r0_alc
+    dinitialconc = {(12, 16): c16_0, (12, 18): c18_0}
+    #assert sum([dinitialconc[k] for k in dinitialconc]) == initial_C
+    assert math.isclose(sum(dinitialconc[k] for k in dinitialconc), initial_C, rel_tol=1e-9)
     return dinitialconc
 
 def get_organophosphate_initial_concentrations(delta_O, initial_C=1e-3, Rstd=0.002004):
@@ -92,6 +106,23 @@ def get_organophosphate_initial_concentrations(delta_O, initial_C=1e-3, Rstd=0.0
                     (12, 16, 16, 18, 16): c12_16_3_18_1,
                     (12, 16, 16, 16, 18): c12_16_3_18_1}
     #assert sum([dinitialconc[k] for k in dinitialconc]) == initial_C
+    assert math.isclose(sum(dinitialconc[k] for k in dinitialconc), initial_C, rel_tol=1e-9)
+    return dinitialconc
+
+def get_phosphate_initial_concentrations(delta_O, initial_C=1e-3, Rstd=0.002004):
+    """
+    Get the concentration of organophosphates
+    """
+    r0_po = (delta_O / 1000 + 1) * Rstd
+    c16_4 = initial_C / (1 + (4 * r0_po)/(1 - 3 * r0_po))
+    c16_3_18_1 = c16_4 * r0_po / (1 - 3 * r0_po)
+    dinitialconc = {(16, 16, 16, 16): c16_4,
+                    (18, 16, 16, 16): c16_3_18_1,
+                    (16, 18, 16, 16): c16_3_18_1,
+                    (16, 16, 18, 16): c16_3_18_1,
+                    (16, 16, 16, 18): c16_3_18_1}
+    #assert sum([dinitialconc[k] for k in dinitialconc]) == initial_C
+    assert math.isclose(sum(dinitialconc[k] for k in dinitialconc), initial_C, rel_tol=1e-9)
     return dinitialconc
 
 def create_reactions_for_step_one(dkie, verbose=False):
