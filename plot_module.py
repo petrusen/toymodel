@@ -367,7 +367,7 @@ def plot_mk_information(dkie, handles, labels, ax):
     else:
         fig = ax.figure
     string = _get_title(dkie, cntthresh=1)
-    ax.text(0.75, 0.5, string, transform=ax.transAxes, ha='left', va='center', fontsize=11)
+    ax.text(0.75, 0.475, string, transform=ax.transAxes, ha='left', va='center', fontsize=10)
     ax.axis('off')
     ax.legend(handles, labels, ncols=2, loc="center left")
 
