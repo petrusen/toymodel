@@ -55,14 +55,14 @@ def main():
      # Plot four panel figure
      fig, axes = plt.subplots(2, 2, figsize=(14, 9))
      ax1, ax2, ax3, ax4 = axes[0, 0], axes[1, 0], axes[0, 1], axes[1, 1]
-     plot_conc_vs_time(conc_data, t_data, compounds, dkie, ax=ax1)
+     plot_conc_vs_time(conc_data, t_data, compounds, dkie, writecsv=dplot["C_time"], ax=ax1)
      plot_ratio_vs_reaction_progress(conc_data, t_data, compounds, dkie, ax=ax4, 
-                                     reactionref=dplot["rxnref"], writecsv=dplot["csvfile"])
-     plot_ratio_vs_time(conc_data, t_data, compounds, dkie, ax=ax2)
+                                     reactionref=dplot["rxnref"], writecsv=dplot["dO_rxnprogress"])
+     plot_ratio_vs_time(conc_data, t_data, compounds, dkie, writecsv=dplot["dO_time"], ax=ax2)
      handles, labels = ax1.get_legend_handles_labels()
      plot_mk_information(dkie, handles, labels, ax=ax3)
      plt.tight_layout()
-     plt.savefig(dplot["pngfile"])
+     plt.savefig(dplot["4plotlayout"])
      plt.show()
 
 main()

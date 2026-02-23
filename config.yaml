@@ -23,8 +23,10 @@ dkie:
   conc_po: 0.001
 
 plot:
-  pngfile: mk_scenario_feb23_v2.png
-  csvfile: mk_scenario_feb23_v2.csv
+  4plotlayout: mk_scenario_feb23.png
+  C_time: mk_scenario_feb23_C_time.tsv # tsv istead of csv because compounds contains ','
+  dO_time: mk_scenario_feb23_dO_time.csv
+  dO_rxnprogress: mk_scenario_feb23_dO_rxnprogress.csv
   rxnref: "PO4"
 
 timerange:

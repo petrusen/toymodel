@@ -97,8 +97,8 @@ def plot_ratio_vs_time(
         for key in Rsub:
             safedata.append(Rsub[key])
         safedataT = np.array(safedata).T
-        np.savetxt(writecsv, safedataT, delimiter=",")
-
+        header = "Time (s),"+",".join(Rsub.keys())
+        np.savetxt(writecsv.split(".")[0]+".csv", safedataT, delimiter=",", header=header)
 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(r"$\delta^{18}$O(S)")
@@ -374,7 +374,7 @@ def plot_mk_information(dkie, handles, labels, ax):
     return ax
 
 
-def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None, ax=None):
+def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None, writecsv=False, ax=None):
     """
     Plot evolution of concentrations in time.
 
@@ -405,11 +405,11 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None,
 
     concentration_dataT = np.array(concentration_data).T
     idx = 0
-
+    dictcomp_conc = {}
     for d, c in zip(compounds, concentration_dataT):
+        dictcomp_conc[d] = c
         if max(c) < 1e-20:
             continue
-
         if idx < 30:
             plottype = '-'
             linewidth = 2
@@ -433,6 +433,43 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None,
     #ax.set_title(titlestr)
 
     ##ax.legend(loc="lower center", ncol=2)
+
+    if writecsv is not False:
+        safedata = []
+        safedata.append(time_data)
+        for key in compounds:
+            safedata.append(dictcomp_conc[key])
+        safedataT = np.array(safedata).T
+        np.savetxt(writecsv, safedataT, delimiter=",")
+
+
+    if writecsv is not False:
+        safedata = []
+        safedata.append(time_data)
+    
+        for key in dictcomp_conc:
+            safedata.append(dictcomp_conc[key])
+    
+        safedataT = np.array(safedata).T
+    
+        header = "Time (s)\t" + "\t".join([str(o) for o in dictcomp_conc.keys()])
+    
+        np.savetxt(
+            writecsv,
+            safedataT,
+            delimiter="\t",
+            header=header,
+            comments=""   # prevents "#" before header
+        )
+
+    #if writecsv is not False:
+    #    safedata = []
+    #    safedata.append(time_data)
+    #    for key in dictcomp_conc:
+    #        safedata.append(dictcomp_conc[key])
+    #    safedataT = np.array(safedata).T
+    #    header = "Time (s),"+",".join([str(o) for o in dictcomp_conc.keys()])
+    #    np.savetxt(writecsv.split(".")[0]+".csv", safedataT, delimiter=",", header=header)
 
     if created_fig:
         fig.tight_layout()
