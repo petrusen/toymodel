@@ -3,17 +3,24 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 
-def _get_zero_safe_ratio(x18, x16, Rstd=0.002004):
+def _is_it_zero(x18, x16, Rstd=0.002004, tol=1e-9):
+    """
+    Returns True if either den or num is less than or equal to `tol`.
+    """
+    den = sum(x16)
+    num = sum(x18)
+    
+    # Anything less than or equal to `tol` is considered zero
+    return den <= tol or num <= tol
+
+def _get_ratio(x18, x16, Rstd=0.002004):
     """
     Avoid dividing by zero.
     """
     den = sum(x16)
     num = sum(x18)
-    if den > 0 and num > 0:
-        ratio = num / den
-        delta = ((ratio / Rstd) - 1) * 1000
-    else:
-        delta = 0
+    ratio = num / den
+    delta = ((ratio / Rstd) - 1) * 1000
     return delta
 
 def plot_ratio_vs_time(
@@ -49,7 +56,7 @@ def plot_ratio_vs_time(
 
     # --- compute ratios ---
     Rsub = {"CPO4": [], "CPO5": [], "PO4": [], "O": [], "CO": []}
-
+    cnt = 0
     for c in concentration_data:
         cpo4_18, cpo4_16 = [], []
         cpo5_18, cpo5_16 = [], []
@@ -77,23 +84,34 @@ def plot_ratio_vs_time(
             else:
                 raise ValueError("Unknown compound length")
 
-        for a, b, key in [
+        compounds_to_check = [
             (cpo4_18, cpo4_16, "CPO4"),
             (po4_18,  po4_16,  "PO4"),
             (cpo5_18, cpo5_16, "CPO5"),
             (o_18,    o_16,    "O"),
             (co_18,   co_16,   "CO"),
-        ]:
-            Rsub[key].append(_get_zero_safe_ratio(a, b))
+        ]
+        
+        all_valid = True
+        
+        for a, b, key in compounds_to_check:
+            if _is_it_zero(a, b, Rstd=0.002004):
+                all_valid = False
+                break  # Stop checking early; at least one failed
+        
+        if all_valid:
+            cnt += 1
+            for a, b, key in compounds_to_check:
+                Rsub[key].append(_get_ratio(a, b))
 
     # --- plotting ---
     ax.set_xscale("log")
     for key in Rsub:
-        ax.plot(time_data, Rsub[key], label=key)
+        ax.plot(time_data[:cnt], Rsub[key], label=key)
 
     if writecsv is not False:
         safedata = []
-        safedata.append(time_data)
+        safedata.append(time_data[:cnt])
         for key in Rsub:
             safedata.append(Rsub[key])
         safedataT = np.array(safedata).T
@@ -174,7 +192,7 @@ def plot_ratio_vs_time_separate(
             (o_18,    o_16,    "O"),
             (co_18,   co_16,   "CO"),
         ]:
-            Rsub[key].append(_get_zero_safe_ratio(a, b))
+            Rsub[key].append(_get_ratio(a, b))
 
     # --- plotting ---
     for key in Rsub:
@@ -227,6 +245,7 @@ def plot_ratio_vs_reaction_progress(
     # --- compute ratios ---
     Rsub = {"CPO4": [], "CPO5": [], "PO4": [], "O": [], "CO": []}
     Csumi = {"CPO4": [], "CPO5": [], "PO4": [], "O": [], "CO": []}
+    cnt = 0
     for c in concentration_data:
         cpo4_18, cpo4_16 = [], []
         cpo5_18, cpo5_16 = [], []
@@ -262,15 +281,27 @@ def plot_ratio_vs_reaction_progress(
         for key in Csumj.keys():
             Csumi[key].append(sum(Csumj[key]))
 
-        for a, b, key in [
+            compounds_to_check = [
             (cpo4_18, cpo4_16, "CPO4"),
             (po4_18,  po4_16,  "PO4"),
             (cpo5_18, cpo5_16, "CPO5"),
             (o_18,    o_16,    "O"),
             (co_18,   co_16,   "CO"),
-        ]:
-            Rsub[key].append(_get_zero_safe_ratio(a, b))
-    
+        ]
+
+        all_valid = True
+
+        for a, b, key in compounds_to_check:
+            if _is_it_zero(a, b, Rstd=0.002004):
+                all_valid = False
+                break  # Stop checking early; at least one failed
+
+        if all_valid:
+            cnt += 1
+            for a, b, key in compounds_to_check:
+                Rsub[key].append(_get_ratio(a, b))
+
+
     concentration_data_T = np.array(concentration_data).T
     
     # reaction progress reference selected by the user
@@ -280,13 +311,13 @@ def plot_ratio_vs_reaction_progress(
         reaction_progress = concentration_data_T[reacind]
         reaction_progress_norm = [r/reaction_progress[0] for r in reaction_progress]
         for key in Rsub:
-            ax.plot(reaction_progress_norm, Rsub[key], label=key)
+            ax.plot(reaction_progress_norm[:cnt], Rsub[key], label=key)
         ax.set_xlabel("Reaction progress respect to {a}".format(a=str(reactionref)))
     elif isinstance(reactionref, str):
         # --- plotting ---
         reaction_progress_norm = [r/Csumi[reactionref][0] for r in Csumi[reactionref]]
         for key in Rsub:
-            ax.plot(reaction_progress_norm, Rsub[key], label=key)
+            ax.plot(reaction_progress_norm[:cnt], Rsub[key], label=key)
         ax.set_xlabel("Reaction progress respect to {a}".format(a=reactionref))
     
     ax.set_ylabel(r"$\delta^{18}$O(S)")
@@ -305,7 +336,7 @@ def plot_ratio_vs_reaction_progress(
 
     if writecsv is not False:
         safedata = []
-        safedata.append(reaction_progress_norm)
+        safedata.append(reaction_progress_norm[:cnt])
         for key in Rsub:
             safedata.append(Rsub[key])
         safedataT = np.array(safedata).T
@@ -428,12 +459,6 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None,
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Concentration")
 
-    # Title
-    #titlestr = _get_title(dkie)
-    #ax.set_title(titlestr)
-
-    ##ax.legend(loc="lower center", ncol=2)
-
     if writecsv is not False:
         safedata = []
         safedata.append(time_data)
@@ -461,15 +486,6 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None,
             header=header,
             comments=""   # prevents "#" before header
         )
-
-    #if writecsv is not False:
-    #    safedata = []
-    #    safedata.append(time_data)
-    #    for key in dictcomp_conc:
-    #        safedata.append(dictcomp_conc[key])
-    #    safedataT = np.array(safedata).T
-    #    header = "Time (s),"+",".join([str(o) for o in dictcomp_conc.keys()])
-    #    np.savetxt(writecsv.split(".")[0]+".csv", safedataT, delimiter=",", header=header)
 
     if created_fig:
         fig.tight_layout()

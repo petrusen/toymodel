@@ -44,7 +44,9 @@ def main():
      reactions1 = create_reactions_for_step_one(dkie, filtreactions=dkie["filtreactions"])
      reactions2 = create_reactions_for_step_two(dkie, reactions1)
      total_reac = reactions1 + reactions2
-     print("TOTAL REACTIONS", len(total_reac), total_reac)
+     print("TOTAL REACTIONS")
+     for r in total_reac:
+         print(r)
      # Set up and solve ODE equations
      simdata = calculate_concentrations_from_mk(total_reac, initial_conc, timerange)
      conc_data, t_data, compounds = simdata

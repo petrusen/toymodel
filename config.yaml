@@ -1,32 +1,34 @@
 dkie:
   k1_16: 1
-  k2_16: 1
-  k3_16: 1
-  k4_16: 1
-  kie1p: 1
-  kie1s: 1
+  k2_16: 0.1
+  k3_16: 100
+  k4_16: 0.000001
+  kie1p: 1.02
+  kie1s: 1.00
   kie2p: 1
   kie2s: 1
-  kie3p: 1
-  kie3s: 1
+  kie3p: 1.02
+  kie3s: 0.995
   kie4s: 1
   kie4p: 1
-  dh2o: 0
-  dcpo: 0
-  dco: 15
-  dpo: 20
-  conc_h2o: 0
-  conc_cpo: 0
-  conc_co: 0.001
-  conc_po: 0.001
-  filtreactions: True
+  penalty_k2: 1
+  penalty_k4: 1
+  dh2o: -9.59
+  dcpo: 8.20
+  dco: 0
+  dpo: 0
+  conc_h2o: 55.5
+  conc_cpo: 0.004
+  conc_co: 0
+  conc_po: 0
+  filtreactions: False
 
 plot:
-  4plotlayout: mk_scenario_feb23.png
-  C_time: mk_scenario_feb23_C_time.tsv # tsv istead of csv because compounds contains ','
-  dO_time: mk_scenario_feb23_dO_time.csv
-  dO_rxnprogress: mk_scenario_feb23_dO_rxnprogress.csv
-  rxnref: "PO4"
+  4plotlayout: mk_scenario2_aug6.png
+  C_time: mk_scenario2_aug6_C_time.tsv # tsv istead of csv because compounds contains ','
+  dO_time: mk_scenario2_aug6_dO_time.csv
+  dO_rxnprogress: mk_scenario2_aug6_dO_rxnprogress.csv
+  rxnref: "CPO4"
 
 timerange:
   type: logspace
