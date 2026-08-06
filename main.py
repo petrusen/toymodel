@@ -41,10 +41,10 @@ def main():
          initial_conc.update(dicti)
      
      # Get reactions for the two steps
-     reactions1 = create_reactions_for_step_one(dkie, verbose=False)
-     reactions2 = create_reactions_for_step_two(dkie, verbose=False)
+     reactions1 = create_reactions_for_step_one(dkie, filtreactions=dkie["filtreactions"])
+     reactions2 = create_reactions_for_step_two(dkie, reactions1)
      total_reac = reactions1 + reactions2
-     
+     print("TOTAL REACTIONS", len(total_reac), total_reac)
      # Set up and solve ODE equations
      simdata = calculate_concentrations_from_mk(total_reac, initial_conc, timerange)
      conc_data, t_data, compounds = simdata

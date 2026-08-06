@@ -21,6 +21,7 @@ dkie:
   conc_cpo: 0
   conc_co: 0.001
   conc_po: 0.001
+  filtreactions: True
 
 plot:
   4plotlayout: mk_scenario_feb23.png

@@ -125,7 +125,33 @@ def get_phosphate_initial_concentrations(delta_O, initial_C=1e-3, Rstd=0.002004)
     assert math.isclose(sum(dinitialconc[k] for k in dinitialconc), initial_C, rel_tol=1e-9)
     return dinitialconc
 
-def create_reactions_for_step_one(dkie, verbose=False):
+def _get_filtered_scramble_reactions(reactions):
+    """
+    Filters out reactions where the O18 gets scrambled in the hypothetical
+    transition state.
+    """
+    filtreactions = []
+    for rxni in reactions:
+        filtflag = True
+        lhs, rhs, kd, kr = rxni
+        lhsi, lhsj = lhs
+        rhsi = rhs[0]
+        assert len(lhsj) == 1
+        assert len(rhsi) == 6
+        # Search for consecutive 18s starting at any position except len(lst) - 2
+        for i in range(len(rhsi) - 1):
+            if rhsi[i] == 18 and rhsi[i+1] == 18:
+                # Check if this pair is NOT in the last two positions
+                if i != len(rhsi) - 2:
+                    filtflag = False # Filter it out
+        # Second O18 can only come from the reactive water
+        if rhsi.count(18) == 2 and rhsi[-1] == 16:
+            filtflag = False
+        if filtflag:
+            filtreactions.append(rxni)
+    return filtreactions
+
+def create_reactions_for_step_one(dkie, filtreactions=True, verbose=False):
     """
     Function to create all combinations of isotops with the following shape:
 
@@ -139,7 +165,8 @@ def create_reactions_for_step_one(dkie, verbose=False):
     #kd, kr = 1, 0.001 # ! HARDCODED
 
     # isomer O16 O18 mix
-    for template in [[16, 16, 16, 16, 16],[18, 16, 16, 16, 16], [18, 18, 16, 16, 16]]: # only four out of five labile oxygens
+    oxygens = [[16, 16, 16, 16, 16],[18, 16, 16, 16, 16], [18, 18, 16, 16, 16]]
+    for template in oxygens: # only four out of five labile oxygens
         comb_po5 = list([list(o) for o in set(itertools.permutations(template))])
         for rhs_po5 in comb_po5:
            # the oxygen can only be lost from one specific position (arbitrarely [-1])
@@ -153,7 +180,8 @@ def create_reactions_for_step_one(dkie, verbose=False):
            tmplhs = (tuple(lhs_po4), (h2o,))
            kd, kr = _calculate_rate_constant(tmplhs, tmprhs, dkie)
            reactions.append((tmplhs, tmprhs, kd, kr))
-
+    if filtreactions:
+        reactions = _get_filtered_scramble_reactions(reactions)
     if verbose: 
         for r in reactions:
             print(r)
@@ -161,7 +189,7 @@ def create_reactions_for_step_one(dkie, verbose=False):
     return reactions
 
 
-def create_reactions_for_step_two(dkie, verbose=False):
+def create_reactions_for_step_two(dkie, reactions1, verbose=False):
     """
     Function to create all combinations of isotops with the following shape:
 
@@ -176,22 +204,22 @@ def create_reactions_for_step_two(dkie, verbose=False):
     #kd, kr = 1, 0.001 # ! HARDCODED
     
     # isomer O16 O18 mix
-    for template in [[16, 16, 16, 16, 16],[18, 16, 16, 16, 16], [18, 18, 16, 16, 16]]: # only four out of five labile oxygens
-        comb_po5 = list([list(o) for o in set(itertools.permutations(template))])
-        for lhs_po5 in comb_po5:
-                _lhs_po5 = [12] + lhs_po5.copy()
-                rhs_po4 = _lhs_po5.copy()
-                o = rhs_po4[1]
-                c = rhs_po4[0]
-                assert c == 12
-                rhs_po4.pop(0)
-                rhs_po4.pop(0)
-                tmplhs = (tuple(_lhs_po5),)
-                tmprhs = (tuple(rhs_po4), (c, o))
-                kd, kr = _calculate_rate_constant(tmplhs, tmprhs, dkie)
-                reactions.append((tmplhs, tmprhs, kd, kr))
-
-    #reactions_worep = list(set(reactions))
+    for rxni in reactions1:
+        _lhs, _rhs, _kd, _kr = rxni
+        lhs_po5 = list(_rhs[0][1:])
+        #for lhs_po5 in comb_po5:
+        _lhs_po5 = [12] + lhs_po5.copy()
+        rhs_po4 = _lhs_po5.copy()
+        o = rhs_po4[1]
+        c = rhs_po4[0]
+        assert c == 12
+        rhs_po4.pop(0)
+        rhs_po4.pop(0)
+        tmplhs = (tuple(_lhs_po5),)
+        tmprhs = (tuple(rhs_po4), (c, o))
+        kd, kr = _calculate_rate_constant(tmplhs, tmprhs, dkie)
+        reactions.append((tmplhs, tmprhs, kd, kr))
+    
     if verbose:
         for r in reactions_worep:
             print(len(reactions_worep))
