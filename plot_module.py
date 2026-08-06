@@ -278,10 +278,7 @@ def plot_ratio_vs_reaction_progress(
             else:
                 raise ValueError("Unknown compound length")
 
-        for key in Csumj.keys():
-            Csumi[key].append(sum(Csumj[key]))
-
-            compounds_to_check = [
+        compounds_to_check = [
             (cpo4_18, cpo4_16, "CPO4"),
             (po4_18,  po4_16,  "PO4"),
             (cpo5_18, cpo5_16, "CPO5"),
@@ -298,6 +295,8 @@ def plot_ratio_vs_reaction_progress(
 
         if all_valid:
             cnt += 1
+            for key in Csumj.keys():
+                Csumi[key].append(sum(Csumj[key]))
             for a, b, key in compounds_to_check:
                 Rsub[key].append(_get_ratio(a, b))
 
@@ -308,16 +307,16 @@ def plot_ratio_vs_reaction_progress(
     if isinstance(reactionref, tuple): 
         # --- plotting ---
         reacind = compounds[reactionref]
-        reaction_progress = concentration_data_T[reacind]
+        reaction_progress = concentration_data_T[reacind][:cnt]
         reaction_progress_norm = [r/reaction_progress[0] for r in reaction_progress]
         for key in Rsub:
-            ax.plot(reaction_progress_norm[:cnt], Rsub[key], label=key)
+            ax.plot(reaction_progress_norm, Rsub[key], label=key)
         ax.set_xlabel("Reaction progress respect to {a}".format(a=str(reactionref)))
     elif isinstance(reactionref, str):
         # --- plotting ---
-        reaction_progress_norm = [r/Csumi[reactionref][0] for r in Csumi[reactionref]]
+        reaction_progress_norm = [r/Csumi[reactionref][0] for r in Csumi[reactionref][:cnt]]
         for key in Rsub:
-            ax.plot(reaction_progress_norm[:cnt], Rsub[key], label=key)
+            ax.plot(reaction_progress_norm, Rsub[key], label=key)
         ax.set_xlabel("Reaction progress respect to {a}".format(a=reactionref))
     
     ax.set_ylabel(r"$\delta^{18}$O(S)")
@@ -336,7 +335,7 @@ def plot_ratio_vs_reaction_progress(
 
     if writecsv is not False:
         safedata = []
-        safedata.append(reaction_progress_norm[:cnt])
+        safedata.append(reaction_progress_norm)
         for key in Rsub:
             safedata.append(Rsub[key])
         safedataT = np.array(safedata).T
