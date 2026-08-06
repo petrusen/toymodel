@@ -25,10 +25,6 @@ def _calculate_rate_constant(lhs, rhs, dkie):
     k4p_18 = dkie["k4_16"] / dkie["kie4p"]
     k4s_18 = dkie["k4_16"] / dkie["kie4s"]
 
-    penalty_k2 = dkie["penalty_k2"]
-    penalty_k4 = dkie["penalty_k4"]
-
-
     if len(lhs) == 2:        # reaction 1
         r1, h2o = lhs        # organophosphate and water
         tsi = rhs[0]            # 'transition state' intermediate
@@ -37,33 +33,33 @@ def _calculate_rate_constant(lhs, rhs, dkie):
         if 18 in h2o:
             kf = k1p_18      # kf depends only on h2o
             if tsi[-1] == 18: 
-                kb = k2p_18 * penalty_k2
+                kb = k2p_18 
             elif tsi[-1] == 16:
-                kb = k2s_18 * penalty_k2
+                kb = k2s_18
         elif 16 in h2o: 
             if 18 in r1: 
                 kf = k1s_18
                 if tsi[-1] == 18:
-                    kb = k2p_18 * penalty_k2
+                    kb = k2p_18
                 elif tsi[-1] == 16:
-                    kb = k2p_18 * penalty_k2
+                    kb = k2p_18
             else:
                 kf = dkie["k1_16"]
-                kb = dkie["k2_16"] * penalty_k2
+                kb = dkie["k2_16"]
             
     elif len(lhs) == 1: # reaction 2
         tsi = lhs[0]     # 'transition state' intermediate
         p1, ro = rhs  # phosphate and alcohol
         if 18 in ro:
             kf = k3p_18
-            kb = k4p_18 * penalty_k4
+            kb = k4p_18
         else: 
             if 18 in p1:
                 kf = k3s_18
-                kb = k4s_18 * penalty_k4
+                kb = k4s_18
             else:
                 kf = dkie["k3_16"]
-                kb = dkie["k4_16"] * penalty_k4
+                kb = dkie["k4_16"]
     assert kf != None
     assert kb != None
 
