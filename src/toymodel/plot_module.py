@@ -1,7 +1,11 @@
+# Standard library imports
 import itertools
 import copy
+
+# Third-party library imports
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 def _is_it_zero(x18, x16, Rstd=0.002004, tol=1e-9):
     """
@@ -494,5 +498,23 @@ def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None,
     return ax
 
 
+def toymodel_header():
+    """
+    Prints the ToyModel ASCII art banner to the console.
+
+    This function serves as the visual entry point for the CLI tool,
+    signaling the successful initialization of the package.
+    """
+    ascii_text = r"""
+     _______                   __  __           _ 
+    |__   __|                 |  \/  |         | |     -
+       | | ___  _   _  ______ | \  / | ___   __| | ___| |
+       | |/ _ \| | | ||______|| |\/| |/ _ \ / _` |/ _ \ |
+       | | (_) | |_| |        | |  | | (_) | (_| |  __/ |
+       |_|\___/ \__, |        |_|  |_|\___/ \__,_|\___|_|
+                 __/ |                                   
+                |___/                                    
+       """
+    print(ascii_text)
 
 

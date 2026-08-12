@@ -22,12 +22,13 @@ dkie:
   conc_co: 0
   conc_po: 0
   filtreactions: True
+  verbose: False
 
 plot:
-  4plotlayout: mk_scenario2_aug6.png
-  C_time: mk_scenario2_aug6_C_time.tsv # tsv istead of csv because compounds contains ','
-  dO_time: mk_scenario2_aug6_dO_time.csv
-  dO_rxnprogress: mk_scenario2_aug6_dO_rxnprogress.csv
+  4plotlayout: deleteme/mk_scenario2_aug6.png
+  C_time: deleteme/mk_scenario2_aug6_C_time.tsv # tsv istead of csv because compounds contains ','
+  dO_time: deleteme/mk_scenario2_aug6_dO_time.csv
+  dO_rxnprogress: deleteme/mk_scenario2_aug6_dO_rxnprogress.csv
   rxnref: "CPO4"
 
 timerange:

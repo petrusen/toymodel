@@ -4,36 +4,41 @@ import numpy as np
 import yaml
 
 # Local libraries
-from mk_module import (get_water_initial_concentrations, 
+from toymodel.mk_module import (get_water_initial_concentrations, 
                        get_alcohol_initial_concentrations,
                        get_organophosphate_initial_concentrations,
                        get_phosphate_initial_concentrations,
                        create_reactions_for_step_one,
                        create_reactions_for_step_two,
-                       calculate_concentrations_from_mk)
-from plot_module import (plot_conc_vs_time, 
+                       calculate_concentrations_from_mk,)
+from toymodel.plot_module import (plot_conc_vs_time, 
                          plot_ratio_vs_reaction_progress, 
                          plot_ratio_vs_time, 
                          plot_mk_information,
-                         plot_ratio_vs_time_separate)
+                         plot_ratio_vs_time_separate,
+                         toymodel_header)
 
 def main():
 
      # Load YAML
+     toymodel_header()
      with open("config.yaml", "r") as f:
          config = yaml.safe_load(f)
      
      # Extract values
      dkie = config["dkie"]
      dplot = config["plot"]
+     verbose = dkie["verbose"]
      
      # Recreate NumPy array
      tr = config["timerange"]
      timerange = np.logspace(tr["start"], tr["stop"], num=tr["num"])
      
      # Get initial concentrations
-     c0_o = get_water_initial_concentrations(dkie["dh2o"], initial_C=dkie["conc_h2o"])
-     c0_cpo = get_organophosphate_initial_concentrations(dkie["dcpo"], initial_C= dkie["conc_cpo"])
+     c0_o = get_water_initial_concentrations(dkie["dh2o"], 
+                                             initial_C=dkie["conc_h2o"])
+     c0_cpo = get_organophosphate_initial_concentrations(dkie["dcpo"], 
+                                                         initial_C= dkie["conc_cpo"])
      c0_po = get_phosphate_initial_concentrations(dkie["dpo"], initial_C=dkie["conc_po"])
      c0_co = get_alcohol_initial_concentrations(dkie["dco"], initial_C=dkie["conc_co"])
      initial_conc = {}
@@ -44,16 +49,11 @@ def main():
      reactions1 = create_reactions_for_step_one(dkie, filtreactions=dkie["filtreactions"])
      reactions2 = create_reactions_for_step_two(dkie, reactions1)
      total_reac = reactions1 + reactions2
-     print("TOTAL REACTIONS")
-     for r in total_reac:
-         print(r)
+     
      # Set up and solve ODE equations
-     simdata = calculate_concentrations_from_mk(total_reac, initial_conc, timerange)
+     simdata = calculate_concentrations_from_mk(total_reac, initial_conc, timerange, verbose=verbose)
      conc_data, t_data, compounds = simdata
 
-     # Plot 5 separate figures for each dO vs time
-     #plot_ratio_vs_time_separate(conc_data, t_data, compounds, dkie, file=outfile)
-     
      # Plot four panel figure
      fig, axes = plt.subplots(2, 2, figsize=(14, 9))
      ax1, ax2, ax3, ax4 = axes[0, 0], axes[1, 0], axes[0, 1], axes[1, 1]
@@ -65,6 +65,7 @@ def main():
      plot_mk_information(dkie, handles, labels, ax=ax3)
      plt.tight_layout()
      plt.savefig(dplot["4plotlayout"])
+     print("## Plotting results of the kinetic simulation")
      plt.show()
 
 main()

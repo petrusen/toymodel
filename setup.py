@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import re
 
-with open("vizchemoton/__init__.py") as f:
+with open("src/toymodel/__init__.py") as f:
     version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)
 
 setup(

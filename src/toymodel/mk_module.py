@@ -1,7 +1,20 @@
-import itertools
+# Standard library imports
+from collections import Counter, defaultdict
+from contextlib import contextmanager
 import copy
-import numpy as np
+import itertools
+import json
 import math
+import os
+import sys
+import time
+
+# Third-party library imports
+import numpy as np
+
+# Project-specific SCINE imports
+import scine_kinetx as kx
+
 
 def _calculate_rate_constant(lhs, rhs, dkie):
     """
@@ -157,9 +170,8 @@ def create_reactions_for_step_one(dkie, filtreactions=True, verbose=False):
     OOPOOO = ["R1", "rhs", 16, 16, 16, 16, 18]
 
     """
+    print("## Creating isotope exchange reactions")
     reactions = [] # [reactant, product, kdirect, kreverse]
-    #kd, kr = 1, 0.001 # ! HARDCODED
-
     # isomer O16 O18 mix
     oxygens = [[16, 16, 16, 16, 16],[18, 16, 16, 16, 16], [18, 18, 16, 16, 16]]
     for template in oxygens: # only four out of five labile oxygens
@@ -221,12 +233,31 @@ def create_reactions_for_step_two(dkie, reactions1, verbose=False):
             print(len(reactions_worep))
     return reactions
 
-def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose=True):
+
+@contextmanager
+def suppress_stdout():
+    # Save original stdout file descriptor
+    stdout_fd = sys.stdout.fileno()
+    saved_stdout_fd = os.dup(stdout_fd)
+    
+    # Open devnull
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    try:
+        # Redirect stdout file descriptor to devnull
+        os.dup2(devnull, stdout_fd)
+        yield
+    finally:
+        # Restore original stdout
+        os.dup2(saved_stdout_fd, stdout_fd)
+        os.close(saved_stdout_fd)
+        os.close(devnull)
+
+
+def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose=False):
     """
     Convert simplified form of isotopic reactions to a format that KiNetX can read
     """
-    import scine_kinetx as kx
-    import networkx as nx
+    print("## Calculating concentrations as function of time with KiNetX")
     # hash compounds to an index
     compounds = {}
     acc = 0
@@ -240,14 +271,11 @@ def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose
                     compounds[hsi] = acc
                     acc += 1
 
-    if verbose: print("compounds", compounds)
     # create kinetx network object
     network_builder = kx.NetworkBuilder()
     n_compounds = len(compounds.keys())
     n_reactions = len(reactions) 
     n_channels_per_reaction = 1
-    #network_builder.reserve(n_compounds, n_reactions, n_channels_per_reaction)
-    
     initial_conc2 = {compounds[d]:initial_conc[d] for d in initial_conc}
     concentrations = []
     for ii in range(n_compounds):
@@ -272,20 +300,10 @@ def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose
                 E2 = e2 #compounds[e2]
                 edges.append((E1, E2))
         network_builder.add_reaction([kd], [kr], lhs, rhs)
-    #
-    #import matplotlib.pyplot as plt
-    #G = nx.Graph()
-    #G.add_edges_from(edges)
-    #plt.figure(figsize=(10,8))
-    #pos = nx.spring_layout(G)
-    #nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=600, arrows=True)
-    #plt.savefig("test.png")
     
+    # Set up and solve ODE equations
     concentration_data, time_data = [], []
     network = network_builder.generate()
-    #solver = kx.Integrator.explicit_euler
-    #solver = kx.Integrator.implicit_euler
-    #solver = kx.Integrator.cash_karp_5
     solver = kx.Integrator.cvode_bdf
     tstart = 0
     batch_interval = 5000
@@ -299,8 +317,21 @@ def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose
         maxtime = timerange[idx+1]
         dt = timerange[idx+1]
         try:
-            concentration_tmp, r_flux, rf_flux, rb_flux = kx.integrate(network, np.asarray(
-            concentrations),  tstart, dt, solver, batch_interval, nbatches, convergence, integrateByTime=True, maxTime=maxtime)
+            # Silences all C++ and Python console prints inside this block
+            with suppress_stdout():
+                concentration_tmp, r_flux, rf_flux, rb_flux = kx.integrate(
+                    network,
+                    np.asarray(concentrations),
+                    tstart,
+                    dt,
+                    solver,
+                    batch_interval,
+                    nbatches,
+                    convergence,
+                    integrateByTime=True,
+                    maxTime=maxtime,
+                )
+
             col1, col2, col3 = zip(*concentration_tmp)
             concentrations = col1
             if all(x >= 0 for x in col1):
@@ -308,98 +339,11 @@ def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose
                 time_data.append(timerange[idx])
         except RuntimeError:
             break
-            #concentration_data.append([None for _ in concentrations])
-
 
     return concentration_data, time_data, compounds
 
 
-def _read_crn_data(file):
-    """
-    Not related to the toy model
-    """
-    import ast   
-    data = []
-    with open(file, "r") as infile:
-        for line in infile:
-            tmpline = line.split("   ")
-            tmplist = []
-            for t in tmpline:
-                tt = ast.literal_eval(t)
-                tmplist.append(tt)
-            data.append(tmplist)
-    return data
-
-
-def calculate_mk_yields(nodesfile, edgesfile, labelsfile):
-    """
-    Not related to the toy model
-    """
-    import scine_kinetx as kx
-    import numpy as np
-    nodesdata = _read_crn_data(nodesfile)
-    edgesdata = _read_crn_data(edgesfile)
-    network_builder = kx.NetworkBuilder()
-    concentrations_t0 = []
-    for n in nodesdata:
-        # its indexed from 0, instead of from 1, as in kinetx_legacy
-        a, b, c, d = n
-        idxcompound = a
-        network_builder.add_compound(1, str(idxcompound-1))
-        concentrations_t0.append(b)
-
-    edges = []
-    for e in edgesdata:
-        r1, r2, p1, p2, kd, kr = e
-        _lhs = (r1, r2)
-        _rhs = (p1, p2)
-        lhs = [(int(o)-1,1) for o in _lhs if o > 0]
-        rhs = [(int(o)-1,1) for o in _rhs if o > 0]
-        lhs2 = [o for o in _lhs]
-        rhs2 = [o for o in _rhs]
-        network_builder.add_reaction([kd], [kr], lhs, rhs)
-    
-    network = network_builder.generate()
-    #solver = kx.Integrator.explicit_euler
-    #solver = kx.Integrator.implicit_euler
-    #solver = kx.Integrator.cash_karp_5
-    solver = kx.Integrator.cvode_bdf
-    tstart = 0
-    batch_interval = 5000
-    nbatches = 10000
-    convergence = 1e-10
-    dt = 1
-    maxtime = 1000
-    concentration_tmp, r_flux, rf_flux, rb_flux = kx.integrate(network, np.asarray(
-    concentrations_t0),  tstart, dt, solver, batch_interval, nbatches, convergence)
-    col1, col2, col3 = zip(*concentration_tmp)
-    concentrations = col1
-
-
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from operator import itemgetter
-
-    # Convert last row to floats
-    fig, ax = plt.subplots(figsize=(4.8,7.4))
-    labels = range(len(nodesdata))
-    y_positions = np.arange(len(labels))
-    tmp = sorted(zip(labels, concentrations))
-    slabels = [a for a, _ in tmp]
-    sconcentration_data = [c for _, c in tmp]
-    sy_positions = np.arange(len(slabels))  # new positions in sorted order
-
-    plt.barh(sy_positions, sconcentration_data)
-    plt.yticks(sy_positions, slabels)
-    plt.xlabel("Concentration")
-    plt.tight_layout()
-    plt.show()
-
-
-    return concentrations
-
-
-def _is_concentration_sparse(log_values, drop_threshold=60, verbose=True):
+def _is_concentration_sparse(log_values, drop_threshold=60, verbose=False):
     """
     Detects numerically unstable downward jumps in concentration time series.
     Works in log space to handle extremely small values robustly.
