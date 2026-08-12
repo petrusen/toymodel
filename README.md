@@ -1,8 +1,8 @@
 # Toy Model for Oxygen Isotope Fractionation
 
-> *A simplified kinetic model (i.e. toy model) for phosphoryl-transfer reactions of the different oxygen isotopologues and isotopomers of the four species.*
+> **A simplified kinetic model (i.e. toy model) for phosphoryl-transfer reactions of the different oxygen isotopologues and isotopomers of the four species.**
 
-## 1. Description
+## Description
 
 The toy model code was developed to evaluate the oxygen isotope fractionation in all experimentally 
 accessible chemical species, namely 2-naphthyl phosphate, water, 2-naphthol and phosphate.
