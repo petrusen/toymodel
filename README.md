@@ -3,32 +3,20 @@
 A simplified kinetic model (i.e. toy model) for phosphoryl-transfer reactions of the
 different oxygen isotopologues and isotopomers of the four species. 
 
-![Example Image](example.png)
+![Example Image](./docs/example.png)
 *(output example)*
 
 ## 1. Description
 
 The toy model code was developed to evaluate the oxygen isotope fractionation in all experimentally 
-accessible chemical species, namely 2-naphthyl phosphate, water, 2-naphthol and phosphate 
-(see [Bernet et al. 2026](https://chemrxiv.org/))
+accessible chemical species, namely 2-naphthyl phosphate, water, 2-naphthol and phosphate.
+Figure below shows the general form of the reaction studied, the data objects used to model the five 
+species, and the reaction constants for each direction.
+The user can introduce the isotopic effect as primary and secondary in the `config.yaml` file.
+See full article in [Bernet et al. 2026](https://chemrxiv.org/).
 
-
-```
-RO-PO3 + H2O     --(k1, k2)-->  RO-PO3-OH2
-RO-PO3-OH2       --(k3, k4)-->  ROH2 + PO4
-```
-
-Each compound is represented by an **immutable tuple** of atomic weights. Hydrogen atoms are omitted.
-
-| Compound     | Convention                 | Description         |
-|--------------|-----------------------------|--------------------|
-| RO-PO3       | `(12, 16, 16, 16, 16)`      | Organophosphate    |
-| H2O          | `(16)`                      | Water              |
-| RO-PO3-OH2   | `(12, 16, 16, 16, 16, 16)`  | Transition state   |
-| ROH2         | `(12, 16)`                  | Alcohol            |
-| PO4          | `(16, 16, 16, 16)`          | Phosphate          |
-
-Isotopes are introduced by changing the elements of the tuple, e.g. `(12, 18, 16, 16, 16)` represents an organophosphate with an <sup>18</sup>O isotope substitution.
+![Example Image](./docs/toymodel_representation.png)
+*(output example)*
 
 ## 2. Dependencies
 
