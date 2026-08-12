@@ -1,10 +1,6 @@
 # Toy Model for Oxygen Isotope Fractionation
 
-A simplified kinetic model (i.e. toy model) for phosphoryl-transfer reactions of the
-different oxygen isotopologues and isotopomers of the four species. 
-
-![Example Image](./docs/example.png)
-*(output example)*
+> *A simplified kinetic model (i.e. toy model) for phosphoryl-transfer reactions of the different oxygen isotopologues and isotopomers of the four species.*
 
 ## 1. Description
 
@@ -18,57 +14,21 @@ See full article in [Bernet et al. 2026](https://chemrxiv.org/).
 ![Example Image](./docs/toymodel_representation.png)
 *(output example)*
 
-## 2. Dependencies
-
-The code was tested on an Ubuntu 22.04 machine.
-
-| Package       | Version |
-|---------------|---------|
-| scine-kinetx  | 3.1.0   |
-| pyyaml        | 6.0.1   |
-| networkx      | 2.5.1   |
-| matplotlib    | 3.10.1  |
-| numpy         | 2.2.4   |
-
-### Installing `scine-kinetx`
-
-`scine-kinetx` is not distributed via PyPI/conda and must be built from source:
+## Installation
 
 ```bash
-# Create a dedicated environment
+# (recommended) Create a dedicated environment
 python3 -m venv env4toymodel
 cd env4toymodel
 source bin/activate
 
-# Clone and install the C++ repository
-git clone https://github.com/qcscine/kinetx.git
-cd kinetx
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local -DSCINE_BUILD_PYTHON_BINDINGS=ON ..
-make
-make test
-make install
-```
-
-This installs the Python bindings into `$HOME/.local`. Make sure this location is on your `PYTHONPATH` (and `$HOME/.local/bin` on your `PATH`, if needed):
-
-```bash
-export PYTHONPATH=$HOME/.local/lib/python3.12/site-packages:$PYTHONPATH
-```
-
-> Adjust the `python3.12` path segment to match the Python version used during the build.
-
-After installing the Python binding of the C++ KiNetX library, it is possible to pip install the rest:
-
-```bash
-cd <path-to-the-env4toymodel>
+# Clone and install
 git clone https://github.com/petrusen/toymodel.git
 cd toymodel
-python3 -m pip install -e .
+python3 -m pip install -e .  # dependencies already defined in setup.py
 ```
 
-## 3. Example
+## Example
 
 ```bash
 # Introduce input parameters
@@ -77,6 +37,11 @@ vi config.yaml  # or the text editor of your choice
 # Run kinetic simulation
 python3 -m toymodel
 ```
+
+Running the toymodel will produce by default a four panel plot:
+
+![Example Image](./docs/example.png)
+*(output example)*
 
 ## Support
 

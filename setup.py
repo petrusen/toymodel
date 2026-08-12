@@ -17,10 +17,13 @@ setup(
     # Python version and dependencies
     python_requires=">=3.8",
     install_requires=[
+        "scine-kinetx==3.1.0",
         "pyyaml>=6.0",
         "matplotlib>=3.5",
         "networkx>=2.5.1",
         "numpy>=2.2.4",
+        "setuptools"
     ],
-    
+
+
 )
