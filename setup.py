@@ -19,6 +19,8 @@ setup(
     install_requires=[
         "pyyaml>=6.0",
         "matplotlib>=3.5",
+        "networkx>=2.5.1",
+        "numpy>=2.2.4",
     ],
     
 )
