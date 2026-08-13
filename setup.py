@@ -7,7 +7,8 @@ with open("src/toymodel/__init__.py") as f:
 setup(
     name="toymodel",
     version=version,
-    description="A toy model to run kinetic simulations regarding the oxygen isotope fractionation in phosphoryl transfer reactions",
+    description="A toy model to run kinetic simulations regarding the oxygen \
+    isotope fractionation in phosphoryl transfer reactions",
     author="Enric Petrus",
     author_email=["enric.petrus@eawag.ch"],
     # Tells setuptools to look inside the 'src' directory
@@ -24,6 +25,4 @@ setup(
         "numpy>=2.2.4",
         "setuptools"
     ],
-
-
 )
