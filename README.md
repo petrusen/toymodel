@@ -9,7 +9,7 @@ accessible chemical species, namely 2-naphthyl phosphate, water, 2-naphthol and 
 Figure below shows the general form of the reaction studied, the data objects used to model the five 
 species, and the reaction constants for each direction.
 The user can introduce the isotopic effect as primary and secondary in the `config.yaml` file (more details
-can be found in the [online documentation](https://about.readthedocs.com/))
+can be found in the [online documentation](https://toymodel.readthedocs.io/en/latest/inputfile.html))
 See full article in [Bernet et al. 2026](https://chemrxiv.org/).
 
 ![Example Image](./docs/toymodel_representation.png)
