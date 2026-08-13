@@ -1,13 +1,9 @@
 # Standard library imports
-from collections import Counter, defaultdict
 from contextlib import contextmanager
-import copy
 import itertools
-import json
 import math
 import os
 import sys
-import time
 
 # Third-party library imports
 import numpy as np
@@ -21,36 +17,31 @@ def _calculate_rate_constant(lhs, rhs, dkie):
     Heuristic based rate constants. Reverse rate constant is considered 100
     times slower than direct rate constant.
 
-    Pair subindex constants are in forward direction, otherwise they are in 
+    Pair subindex constants are in forward direction, otherwise they are in
     backward direction.
 
     """
-    
     k1p_18 = dkie["k1_16"] / dkie["kie1p"]
     k1s_18 = dkie["k1_16"] / dkie["kie1s"]
-
     k2p_18 = dkie["k2_16"] / dkie["kie2p"]
     k2s_18 = dkie["k2_16"] / dkie["kie2s"]
-
     k3p_18 = dkie["k3_16"] / dkie["kie3p"]
     k3s_18 = dkie["k3_16"] / dkie["kie3s"]
-
     k4p_18 = dkie["k4_16"] / dkie["kie4p"]
     k4s_18 = dkie["k4_16"] / dkie["kie4s"]
-
     if len(lhs) == 2:        # reaction 1
         r1, h2o = lhs        # organophosphate and water
         tsi = rhs[0]            # 'transition state' intermediate
         kf, kb = None, None
-        assert len(h2o) == 1 # make sure its the h2o
+        assert len(h2o) == 1  # make sure its the h2o
         if 18 in h2o:
-            kf = k1p_18      # kf depends only on h2o
-            if tsi[-1] == 18: 
-                kb = k2p_18 
+            kf = k1p_18       # kf depends only on h2o
+            if tsi[-1] == 18:
+                kb = k2p_18
             elif tsi[-1] == 16:
                 kb = k2s_18
-        elif 16 in h2o: 
-            if 18 in r1: 
+        elif 16 in h2o:
+            if 18 in r1:
                 kf = k1s_18
                 if tsi[-1] == 18:
                     kb = k2p_18
@@ -59,26 +50,26 @@ def _calculate_rate_constant(lhs, rhs, dkie):
             else:
                 kf = dkie["k1_16"]
                 kb = dkie["k2_16"]
-            
-    elif len(lhs) == 1: # reaction 2
+    elif len(lhs) == 1:  # reaction 2
         tsi = lhs[0]     # 'transition state' intermediate
         p1, ro = rhs  # phosphate and alcohol
         if 18 in ro:
             kf = k3p_18
             kb = k4p_18
-        else: 
+        else:
             if 18 in p1:
                 kf = k3s_18
                 kb = k4s_18
             else:
                 kf = dkie["k3_16"]
                 kb = dkie["k4_16"]
-    assert kf != None
-    assert kb != None
-
+    assert kf is not None
+    assert kb is not None
     return kf, kb
 
-def get_water_initial_concentrations(delta_O, initial_C=55.5, Rstd=0.002004):
+
+def get_water_initial_concentrations(delta_O, initial_C=55.5,
+                                     Rstd=0.002004):
     """
     Get the concentration of H2O(18) and H2O(16)
     """
@@ -86,41 +77,47 @@ def get_water_initial_concentrations(delta_O, initial_C=55.5, Rstd=0.002004):
     c16_0 = initial_C / (1 + r0_h2o)
     c18_0 = c16_0 * r0_h2o
     dinitialconc = {(16,): c16_0, (18,): c18_0}
-    #assert sum([dinitialconc[k] for k in dinitialconc]) == initial_C
-    assert math.isclose(sum(dinitialconc[k] for k in dinitialconc), initial_C, rel_tol=1e-9)
+    tmpsum = sum(dinitialconc[k] for k in dinitialconc)
+    assert math.isclose(tmpsum, initial_C, rel_tol=1e-9)
     return dinitialconc
 
-def get_alcohol_initial_concentrations(delta_O, initial_C=55.5, Rstd=0.002004):
+
+def get_alcohol_initial_concentrations(delta_O, initial_C=55.5,
+                                       Rstd=0.002004):
     """
-    Get the concentration of H2O(18) and H2O(16)
+    Get the concentration of RO(18) and RO(16)
     """
     r0_alc = (delta_O / 1000 + 1) * Rstd
     c16_0 = initial_C / (1 + r0_alc)
     c18_0 = c16_0 * r0_alc
     dinitialconc = {(12, 16): c16_0, (12, 18): c18_0}
-    #assert sum([dinitialconc[k] for k in dinitialconc]) == initial_C
-    assert math.isclose(sum(dinitialconc[k] for k in dinitialconc), initial_C, rel_tol=1e-9)
+    tmpsum = sum(dinitialconc[k] for k in dinitialconc)
+    assert math.isclose(tmpsum, initial_C, rel_tol=1e-9)
     return dinitialconc
 
-def get_organophosphate_initial_concentrations(delta_O, initial_C=1e-3, Rstd=0.002004):
+
+def get_organophosphate_initial_concentrations(delta_O, initial_C=1e-3,
+                                               Rstd=0.002004):
     """
     Get the concentration of organophosphates
     """
     r0_orgpo = (delta_O / 1000 + 1) * Rstd
     c12_16_4 = initial_C / (1 + (4 * r0_orgpo)/(1 - 3 * r0_orgpo))
     c12_16_3_18_1 = c12_16_4 * r0_orgpo / (1 - 3 * r0_orgpo)
-    dinitialconc = {(12, 16, 16, 16, 16): c12_16_4, 
+    dinitialconc = {(12, 16, 16, 16, 16): c12_16_4,
                     (12, 18, 16, 16, 16): c12_16_3_18_1,
                     (12, 16, 18, 16, 16): c12_16_3_18_1,
                     (12, 16, 16, 18, 16): c12_16_3_18_1,
                     (12, 16, 16, 16, 18): c12_16_3_18_1}
-    #assert sum([dinitialconc[k] for k in dinitialconc]) == initial_C
-    assert math.isclose(sum(dinitialconc[k] for k in dinitialconc), initial_C, rel_tol=1e-9)
+    tmpsum = sum(dinitialconc[k] for k in dinitialconc)
+    assert math.isclose(tmpsum, initial_C, rel_tol=1e-9)
     return dinitialconc
 
-def get_phosphate_initial_concentrations(delta_O, initial_C=1e-3, Rstd=0.002004):
+
+def get_phosphate_initial_concentrations(delta_O, initial_C=1e-3,
+                                         Rstd=0.002004):
     """
-    Get the concentration of organophosphates
+    Get the concentration of phosphates
     """
     r0_po = (delta_O / 1000 + 1) * Rstd
     c16_4 = initial_C / (1 + (4 * r0_po)/(1 - 3 * r0_po))
@@ -130,9 +127,10 @@ def get_phosphate_initial_concentrations(delta_O, initial_C=1e-3, Rstd=0.002004)
                     (16, 18, 16, 16): c16_3_18_1,
                     (16, 16, 18, 16): c16_3_18_1,
                     (16, 16, 16, 18): c16_3_18_1}
-    #assert sum([dinitialconc[k] for k in dinitialconc]) == initial_C
-    assert math.isclose(sum(dinitialconc[k] for k in dinitialconc), initial_C, rel_tol=1e-9)
+    tmpsum = sum(dinitialconc[k] for k in dinitialconc)
+    assert math.isclose(tmpsum, initial_C, rel_tol=1e-9)
     return dinitialconc
+
 
 def _get_filtered_scramble_reactions(reactions):
     """
@@ -147,12 +145,13 @@ def _get_filtered_scramble_reactions(reactions):
         rhsi = rhs[0]
         assert len(lhsj) == 1
         assert len(rhsi) == 6
-        # Search for consecutive 18s starting at any position except len(lst) - 2
+        # Search for consecutive 18s starting at any position
+        # except len(lst) - 2
         for i in range(len(rhsi) - 1):
             if rhsi[i] == 18 and rhsi[i+1] == 18:
                 # Check if this pair is NOT in the last two positions
                 if i != len(rhsi) - 2:
-                    filtflag = False # Filter it out
+                    filtflag = False  # Filter it out
         # Second O18 can only come from the reactive water
         if rhsi.count(18) == 2 and rhsi[-1] == 16:
             filtflag = False
@@ -160,40 +159,41 @@ def _get_filtered_scramble_reactions(reactions):
             filtreactions.append(rxni)
     return filtreactions
 
+
 def create_reactions_for_step_one(dkie, filtreactions=True, verbose=False):
     """
     Function to create all combinations of isotops with the following shape:
-
-    OOPOO + HOH --> OOPOOO 
-    
+    OOPOO + HOH --> OOPOOO
     OOPOO  = ["R1", "lhs", 16, 16, 16, 16, 0]
     OOPOOO = ["R1", "rhs", 16, 16, 16, 16, 18]
-
     """
     print("## Creating isotope exchange reactions")
-    reactions = [] # [reactant, product, kdirect, kreverse]
+    reactions = []  # [reactant, product, kdirect, kreverse]
     # isomer O16 O18 mix
-    oxygens = [[16, 16, 16, 16, 16],[18, 16, 16, 16, 16], [18, 18, 16, 16, 16]]
-    for template in oxygens: # only four out of five labile oxygens
-        comb_po5 = list([list(o) for o in set(itertools.permutations(template))])
+    oxygens = [[16, 16, 16, 16, 16], [18, 16, 16, 16, 16],
+               [18, 18, 16, 16, 16]]
+    for template in oxygens:  # only four out of five labile oxygens
+        comb_po5 = []
+        for o in set(itertools.permutations(template)):
+            comb_po5.append(list(o))
         for rhs_po5 in comb_po5:
-           # the oxygen can only be lost from one specific position (arbitrarely [-1])
-           _rhs_po5 = [12] + rhs_po5.copy()
-           lhs_po4 = _rhs_po5.copy()
-           h2o = lhs_po4[-1]
-           c = lhs_po4[0]
-           assert c == 12
-           lhs_po4.pop()
-           tmprhs = (tuple(_rhs_po5),)
-           tmplhs = (tuple(lhs_po4), (h2o,))
-           kd, kr = _calculate_rate_constant(tmplhs, tmprhs, dkie)
-           reactions.append((tmplhs, tmprhs, kd, kr))
+            # the oxygen can only be lost from one specific
+            # position (arbitrarely [-1])
+            _rhs_po5 = [12] + rhs_po5.copy()
+            lhs_po4 = _rhs_po5.copy()
+            h2o = lhs_po4[-1]
+            c = lhs_po4[0]
+            assert c == 12
+            lhs_po4.pop()
+            tmprhs = (tuple(_rhs_po5),)
+            tmplhs = (tuple(lhs_po4), (h2o,))
+            kd, kr = _calculate_rate_constant(tmplhs, tmprhs, dkie)
+            reactions.append((tmplhs, tmprhs, kd, kr))
     if filtreactions:
         reactions = _get_filtered_scramble_reactions(reactions)
-    if verbose: 
+    if verbose:
         for r in reactions:
             print(r)
-
     return reactions
 
 
@@ -207,15 +207,11 @@ def create_reactions_for_step_two(dkie, reactions1, verbose=False):
     OOPOOO = [16, 16, 16, 16, 18]
 
     """
-    
-    reactions = [] # [reactant, product, kdirect, kreverse]
-    #kd, kr = 1, 0.001 # ! HARDCODED
-    
+    reactions = []
     # isomer O16 O18 mix
     for rxni in reactions1:
         _lhs, _rhs, _kd, _kr = rxni
         lhs_po5 = list(_rhs[0][1:])
-        #for lhs_po5 in comb_po5:
         _lhs_po5 = [12] + lhs_po5.copy()
         rhs_po4 = _lhs_po5.copy()
         o = rhs_po4[1]
@@ -227,19 +223,17 @@ def create_reactions_for_step_two(dkie, reactions1, verbose=False):
         tmprhs = (tuple(rhs_po4), (c, o))
         kd, kr = _calculate_rate_constant(tmplhs, tmprhs, dkie)
         reactions.append((tmplhs, tmprhs, kd, kr))
-    
-    if verbose:
-        for r in reactions_worep:
-            print(len(reactions_worep))
     return reactions
 
 
 @contextmanager
 def suppress_stdout():
+    """
+    TO-DO
+    """
     # Save original stdout file descriptor
     stdout_fd = sys.stdout.fileno()
     saved_stdout_fd = os.dup(stdout_fd)
-    
     # Open devnull
     devnull = os.open(os.devnull, os.O_WRONLY)
     try:
@@ -253,9 +247,11 @@ def suppress_stdout():
         os.close(devnull)
 
 
-def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose=False):
+def calculate_concentrations_from_mk(reactions, initial_conc,
+                                     timerange, verbose=False):
     """
-    Convert simplified form of isotopic reactions to a format that KiNetX can read
+    Convert simplified form of isotopic reactions to a format
+    that KiNetX can read.
     """
     print("## Calculating concentrations as function of time with KiNetX")
     # hash compounds to an index
@@ -270,13 +266,10 @@ def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose
                 else:
                     compounds[hsi] = acc
                     acc += 1
-
     # create kinetx network object
     network_builder = kx.NetworkBuilder()
     n_compounds = len(compounds.keys())
-    n_reactions = len(reactions) 
-    n_channels_per_reaction = 1
-    initial_conc2 = {compounds[d]:initial_conc[d] for d in initial_conc}
+    initial_conc2 = {compounds[d]: initial_conc[d] for d in initial_conc}
     concentrations = []
     for ii in range(n_compounds):
         keys = initial_conc2.keys()
@@ -285,22 +278,21 @@ def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose
         else:
             concentrations.append(0)
     for i in range(n_compounds):
-        idxcompound = i 
+        idxcompound = i
         network_builder.add_compound(1, str(idxcompound))
     edges = []
     for r in reactions:
         _lhs, _rhs, kd, kr = r
-        lhs = [(compounds[o],1) for o in _lhs]
-        rhs = [(compounds[o],1) for o in _rhs]
-        lhs2 = [o for o in _lhs] 
+        lhs = [(compounds[o], 1) for o in _lhs]
+        rhs = [(compounds[o], 1) for o in _rhs]
+        lhs2 = [o for o in _lhs]
         rhs2 = [o for o in _rhs]
         for e1 in lhs2:
             for e2 in rhs2:
-                E1 = e1 #compounds[e1]
-                E2 = e2 #compounds[e2]
+                E1 = e1
+                E2 = e2
                 edges.append((E1, E2))
         network_builder.add_reaction([kd], [kr], lhs, rhs)
-    
     # Set up and solve ODE equations
     concentration_data, time_data = [], []
     network = network_builder.generate()
@@ -331,7 +323,6 @@ def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose
                     integrateByTime=True,
                     maxTime=maxtime,
                 )
-
             col1, col2, col3 = zip(*concentration_tmp)
             concentrations = col1
             if all(x >= 0 for x in col1):
@@ -339,7 +330,6 @@ def calculate_concentrations_from_mk(reactions, initial_conc, timerange, verbose
                 time_data.append(timerange[idx])
         except RuntimeError:
             break
-
     return concentration_data, time_data, compounds
 
 
@@ -349,15 +339,10 @@ def _is_concentration_sparse(log_values, drop_threshold=60, verbose=False):
     Works in log space to handle extremely small values robustly.
     """
     log_values = np.asarray(log_values, dtype=float)
-
     diffs = np.diff(log_values)
-
     output = np.any(diffs < -drop_threshold)
-
     if verbose:
         print("Is there a concentration jump?", output)
         if output:
             print("Diffs:", diffs)
     return output
-
-

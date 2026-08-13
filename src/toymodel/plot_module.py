@@ -1,11 +1,7 @@
-# Standard library imports
-import itertools
-import copy
-
 # Third-party library imports
 import numpy as np
 import matplotlib.pyplot as plt
-from cycler import cycler
+
 
 def _is_it_zero(x18, x16, Rstd=0.002004, tol=1e-9):
     """
@@ -13,9 +9,9 @@ def _is_it_zero(x18, x16, Rstd=0.002004, tol=1e-9):
     """
     den = sum(x16)
     num = sum(x18)
-    
     # Anything less than or equal to `tol` is considered zero
     return den <= tol or num <= tol
+
 
 def _get_ratio(x18, x16, Rstd=0.002004):
     """
@@ -26,6 +22,7 @@ def _get_ratio(x18, x16, Rstd=0.002004):
     ratio = num / den
     delta = ((ratio / Rstd) - 1) * 1000
     return delta
+
 
 def plot_ratio_vs_time(
     concentration_data,
@@ -115,7 +112,6 @@ def plot_ratio_vs_time(
                    delimiter=",", header=header)
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(r"$\delta^{18}$O(S)")
-    titlestr = _get_title(dkie)
     ax.legend(ncols=5)
     if created_fig:
         fig.tight_layout()
@@ -181,7 +177,6 @@ def plot_ratio_vs_time_separate(
     # --- plotting ---
     for key in Rsub:
         fig, ax = plt.subplots()
-        #ax.ticklabel_format(axis='y', style='plain', useOffset=False)
         ax.set_xscale("log")
         ax.plot(time_data, Rsub[key], label=key)
         tmpname = file.split(".")[0] + "_O_vs_time" + "_" + key + ".png"
@@ -277,7 +272,7 @@ def plot_ratio_vs_reaction_progress(
                 Rsub[key].append(_get_ratio(a, b))
     concentration_data_T = np.array(concentration_data).T
     # reaction progress reference selected by the user
-    if isinstance(reactionref, tuple): 
+    if isinstance(reactionref, tuple):
         reacind = compounds[reactionref]
         reaction_progress = concentration_data_T[reacind][:cnt]
         reaction_progress_norm = []
@@ -297,7 +292,6 @@ def plot_ratio_vs_reaction_progress(
         ax.set_xlabel(tmpstr.format(a=reactionref))
     ax.set_ylabel(r"$\delta^{18}$O(S)")
     ax.invert_xaxis()
-    titlestr = _get_title(dkie)
     ax.legend(ncols=5)
     if created_fig:
         fig.tight_layout()
@@ -332,6 +326,7 @@ def _get_title(dkie, cntthresh=6):
     titlestr = "  ".join(titlelist)
     return titlestr
 
+
 def _create_extended_tab20():
     """
     Due to the large amount of compounds formed in the MKs simulations
@@ -348,19 +343,16 @@ def _create_extended_tab20():
         extended_colors.extend([dark, medium, light])
     return extended_colors
 
+
 def plot_mk_information(dkie, handles, labels, ax):
     """
     Placeholder information plot
     """
     # Create axes if not provided
-    created_fig = False
     if ax is None:
-        fig, ax = plt.subplots(figsize=(6.8, 8.4))
-        created_fig = True
-        colors = _create_extended_tab20() 
+        _, ax = plt.subplots(figsize=(6.8, 8.4))
+        colors = _create_extended_tab20()
         ax.set_prop_cycle(color=colors)
-    else:
-        fig = ax.figure
     string = _get_title(dkie, cntthresh=1)
     ax.text(0.75, 0.475, string, transform=ax.transAxes,
             ha='left', va='center', fontsize=10)
@@ -369,10 +361,10 @@ def plot_mk_information(dkie, handles, labels, ax):
     return ax
 
 
-def plot_conc_vs_time(concentration_data, time_data, compounds, dkie, file=None, writecsv=False, ax=None):
+def plot_conc_vs_time(concentration_data, time_data, compounds,
+                      dkie, file=None, writecsv=False, ax=None):
     """
     Plot evolution of concentrations in time.
-
     Parameters
     ----------
     ax : matplotlib.axes.Axes, optional
