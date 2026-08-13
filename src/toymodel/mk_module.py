@@ -68,8 +68,8 @@ def _calculate_rate_constant(lhs, rhs, dkie):
     return kf, kb
 
 
-def get_water_initial_concentrations(delta_O, initial_C=55.5,
-                                     Rstd=0.002004):
+def get_water_initial_concs(delta_O, initial_C=55.5,
+                            Rstd=0.002004):
     """
     Get the concentration of H2O(18) and H2O(16)
     """
@@ -82,8 +82,8 @@ def get_water_initial_concentrations(delta_O, initial_C=55.5,
     return dinitialconc
 
 
-def get_alcohol_initial_concentrations(delta_O, initial_C=55.5,
-                                       Rstd=0.002004):
+def get_alcohol_initial_concs(delta_O, initial_C=55.5,
+                              Rstd=0.002004):
     """
     Get the concentration of RO(18) and RO(16)
     """
@@ -96,8 +96,8 @@ def get_alcohol_initial_concentrations(delta_O, initial_C=55.5,
     return dinitialconc
 
 
-def get_organophosphate_initial_concentrations(delta_O, initial_C=1e-3,
-                                               Rstd=0.002004):
+def get_organophosphate_initial_concs(delta_O, initial_C=1e-3,
+                                      Rstd=0.002004):
     """
     Get the concentration of organophosphates
     """
@@ -114,8 +114,8 @@ def get_organophosphate_initial_concentrations(delta_O, initial_C=1e-3,
     return dinitialconc
 
 
-def get_phosphate_initial_concentrations(delta_O, initial_C=1e-3,
-                                         Rstd=0.002004):
+def get_phosphate_initial_concs(delta_O, initial_C=1e-3,
+                                Rstd=0.002004):
     """
     Get the concentration of phosphates
     """

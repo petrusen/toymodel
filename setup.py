@@ -14,7 +14,6 @@ setup(
     # Tells setuptools to look inside the 'src' directory
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    
     # Python version and dependencies
     python_requires=">=3.8",
     install_requires=[
