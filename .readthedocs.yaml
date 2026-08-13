@@ -13,4 +13,5 @@ sphinx:
 
 python:
   install:
+    - path: . # Installs 'toymodel' in editable mode
     - requirements: docs/requirements-dev.txt
