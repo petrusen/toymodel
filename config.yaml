@@ -11,8 +11,6 @@ dkie:
   kie3s: 0.995
   kie4s: 1
   kie4p: 1
-  penalty_k2: 1
-  penalty_k4: 1
   dh2o: -9.59
   dcpo: 8.20
   dco: 0

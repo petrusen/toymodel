@@ -112,80 +112,13 @@ def plot_ratio_vs_time(
                    delimiter=",", header=header)
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(r"$\delta^{18}$O(S)")
+    ax.set_title(r"$\delta^{18}$O(S)" + " vs Time")
     ax.legend(ncols=5)
     if created_fig:
         fig.tight_layout()
         if file is not None:
             fig.savefig(file)
     return ax
-
-
-def plot_ratio_vs_time_separate(
-    concentration_data,
-    time_data,
-    compounds,
-    dkie,
-    file=None,
-    Rstd=0.002004,
-):
-    """
-    Convert concentrations to subtract ratio of O18/O16.
-    Convention in the field.
-
-    Parameters
-    ----------
-    ax : matplotlib.axes.Axes, optional
-        Axes to plot into. If None, a new figure and axes are created.
-    file : str, optional
-        If provided, the figure is saved to this path.
-    """
-    # --- compute ratios ---
-    Rsub = {"CPO4": [], "CPO5": [], "PO4": [], "O": [], "CO": []}
-    for c in concentration_data:
-        cpo4_18, cpo4_16 = [], []
-        cpo5_18, cpo5_16 = [], []
-        po4_18, po4_16 = [], []
-        o_18, o_16 = [], []
-        co_18, co_16 = [], []
-        for d in compounds:
-            idx = compounds[d]
-            if len(d) == 1:      # O
-                o_18.append(d.count(18) * c[idx])
-                o_16.append(d.count(16) * c[idx])
-            elif len(d) == 2:    # CO
-                co_18.append(d.count(18) * c[idx])
-                co_16.append(d.count(16) * c[idx])
-            elif len(d) == 4:    # PO4
-                po4_18.append(d.count(18) * c[idx])
-                po4_16.append(d.count(16) * c[idx])
-            elif len(d) == 5:    # CPO4
-                cpo4_18.append(d.count(18) * c[idx])
-                cpo4_16.append(d.count(16) * c[idx])
-            elif len(d) == 6:    # CPO5
-                cpo5_18.append(d.count(18) * c[idx])
-                cpo5_16.append(d.count(16) * c[idx])
-            else:
-                raise ValueError("Unknown compound length")
-        for a, b, key in [
-            (cpo4_18, cpo4_16, "CPO4"),
-            (po4_18,  po4_16,  "PO4"),
-            (cpo5_18, cpo5_16, "CPO5"),
-            (o_18,    o_16,    "O"),
-            (co_18,   co_16,   "CO"),
-        ]:
-            Rsub[key].append(_get_ratio(a, b))
-    # --- plotting ---
-    for key in Rsub:
-        fig, ax = plt.subplots()
-        ax.set_xscale("log")
-        ax.plot(time_data, Rsub[key], label=key)
-        tmpname = file.split(".")[0] + "_O_vs_time" + "_" + key + ".png"
-        ax.legend()
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel(r"$\delta^{18}$O(S)")
-        plt.tight_layout()
-        plt.savefig(tmpname)
-    return None
 
 
 def plot_ratio_vs_reaction_progress(
@@ -293,6 +226,7 @@ def plot_ratio_vs_reaction_progress(
     ax.set_ylabel(r"$\delta^{18}$O(S)")
     ax.invert_xaxis()
     ax.legend(ncols=5)
+    ax.set_title(r"$\delta^{18}$O(S)"+" vs Reaction progress")
     if created_fig:
         fig.tight_layout()
         if file is not None:
@@ -323,7 +257,7 @@ def _get_title(dkie, cntthresh=6):
         else:
             titlelist.append(d+"="+str(dkie[d]))
         cnt += 1
-    titlestr = "  ".join(titlelist)
+    titlestr = "".join(titlelist)
     return titlestr
 
 
@@ -354,9 +288,10 @@ def plot_mk_information(dkie, handles, labels, ax):
         colors = _create_extended_tab20()
         ax.set_prop_cycle(color=colors)
     string = _get_title(dkie, cntthresh=1)
-    ax.text(0.75, 0.475, string, transform=ax.transAxes,
+    ax.text(0.775, 0.475, string, transform=ax.transAxes,
             ha='left', va='center', fontsize=10)
     ax.axis('off')
+    ax.set_title("Legend and Simulation parameters")
     ax.legend(handles, labels, ncols=2, loc="center left")
     return ax
 
@@ -404,6 +339,7 @@ def plot_conc_vs_time(concentration_data, time_data, compounds,
     ax.set_yscale("log")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Concentration (mol/L)")
+    ax.set_title("Concentration vs Time")
     if writecsv is not False:
         safedata = []
         safedata.append(time_data)
