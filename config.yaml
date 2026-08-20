@@ -23,10 +23,10 @@ dkie:
   verbose: False
 
 plot:
-  4plotlayout: deleteme/mk_scenario2_aug6.png
-  C_time: deleteme/mk_scenario2_aug6_C_time.tsv # tsv istead of csv because compounds contains ','
-  dO_time: deleteme/mk_scenario2_aug6_dO_time.csv
-  dO_rxnprogress: deleteme/mk_scenario2_aug6_dO_rxnprogress.csv
+  4plotlayout: kinetic_simulation_results.png
+  C_time: False 
+  dO_time: False
+  dO_rxnprogress: False
   rxnref: "CPO4"
 
 timerange:
